@@ -65,13 +65,13 @@ export default function Home() {
 
       {emergency && <EmergencyDisplay />}
 
-      <div className="flex flex-row items-center justify-center space-x-4">
-        <PanicButton className="w-64 h-64" />
+      <div className="flex flex-col items-center justify-center space-y-4">
         <ActiveMonitoringButton
           activeMonitoring={activeMonitoring}
           toggleActiveMonitoring={toggleActiveMonitoring}
           className="w-64 h-64"
         />
+        <PanicButton className="w-64 h-64" />
       </div>
 
       {/* Advertisement Placeholder */}
@@ -82,4 +82,5 @@ export default function Home() {
     </div>
   );
 }
+
 
