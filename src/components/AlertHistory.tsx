@@ -1,44 +1,33 @@
-
 "use client";
 
-import { useState } from "react";
-
-const dummyAlerts = [
-  {
-    id: 1,
-    date: "2024-07-15",
-    time: "10:30 AM",
-    geolocation: "34.0522, -118.2437",
-    notificationsSent: "SMS, Email",
-    recordings: "video.mp4, audio.mp3",
-  },
-  {
-    id: 2,
-    date: "2024-07-14",
-    time: "05:45 PM",
-    geolocation: "34.0522, -118.2437",
-    notificationsSent: "SMS",
-    recordings: "audio.mp3",
-  },
-];
+import { useState, useEffect } from "react";
 
 export function AlertHistory() {
+  const [alerts, setAlerts] = useState([]);
   const [selectedAlert, setSelectedAlert] = useState(null);
+
+  useEffect(() => {
+    // Load alert history from local storage on component mount
+    const storedAlerts = localStorage.getItem("alertHistory");
+    if (storedAlerts) {
+      setAlerts(JSON.parse(storedAlerts));
+    }
+  }, []);
 
   return (
     <div className="settings-panel">
       <h2>Alert History</h2>
 
-      {dummyAlerts.map((alert) => (
+      {alerts.map((alert, index) => (
         <div
-          key={alert.id}
+          key={index}
           className="alert-history-item"
           onClick={() => setSelectedAlert(alert)}
         >
           <h4>
             {alert.date} - {alert.time}
           </h4>
-          <p>Geolocation: {alert.geolocation}</p>
+          <p>Geolocation: {alert.gpsCoordinates}</p>
         </div>
       ))}
 
@@ -47,11 +36,13 @@ export function AlertHistory() {
           <h3>Alert Details</h3>
           <p>Date: {selectedAlert.date}</p>
           <p>Time: {selectedAlert.time}</p>
-          <p>Geolocation: {selectedAlert.geolocation}</p>
-          <p>Notifications Sent: {selectedAlert.notificationsSent}</p>
-          <p>Recordings: {selectedAlert.recordings}</p>
+          <p>Geolocation: {selectedAlert.gpsCoordinates}</p>
+          <p>Front Camera Picture: {selectedAlert.frontCameraPicture}</p>
+          <p>Rear Camera Picture: {selectedAlert.rearCameraPicture}</p>
+          <p>Video URL: {selectedAlert.videoUrl}</p>
         </div>
       )}
     </div>
   );
 }
+

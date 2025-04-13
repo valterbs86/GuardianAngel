@@ -8,36 +8,11 @@ import { setPanicCallback } from "@/services/buttonSequenceService";
 
 interface PanicButtonProps {
     className?: string;
+    triggerEmergencySequence: () => void;
 }
 
-export function PanicButton({ className }: PanicButtonProps) {
+export function PanicButton({ className, triggerEmergencySequence }: PanicButtonProps) {
   const { toast } = useToast();
-
-  const triggerEmergencySequence = async () => {
-    toast({
-      title: "Emergency sequence initiated!",
-      description: "Recording video and audio and assessing the situation...",
-    });
-
-    // Simulate recording video and audio
-    const videoUrl = "https://example.com/simulated-video.mp4";
-    const audioUrl = "https://example.com/simulated-audio.mp3";
-
-    try {
-      const assessment = await assessSituation({ videoUrl, audioUrl });
-      toast({
-        title: "Situation assessed!",
-        description: `Severity: ${assessment.severity}. Summary: ${assessment.summary}`,
-      });
-      // TODO: Integrate with services to send data to emergency contacts
-    } catch (error: any) {
-      toast({
-        title: "Error assessing situation",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   useEffect(() => {
     setPanicCallback(triggerEmergencySequence);
@@ -46,7 +21,7 @@ export function PanicButton({ className }: PanicButtonProps) {
     return () => {
       setPanicCallback(null);
     };
-  }, []);
+  }, [triggerEmergencySequence]);
 
   return (
     <Button
@@ -58,3 +33,4 @@ export function PanicButton({ className }: PanicButtonProps) {
     </Button>
   );
 }
+

@@ -4,19 +4,23 @@ import { PanicButton } from "@/components/PanicButton";
 import { EmergencyDisplay } from "@/components/EmergencyDisplay";
 import { SettingsButton } from "@/components/SettingsButton";
 import { Toaster } from "@/components/ui/toaster";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { ActiveMonitoringButton } from "@/components/ActiveMonitoringButton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { getCurrentLocation } from "@/services/location";
+import { Play, PauseSquare } from "lucide-react";
 
 // import GuardianAngelLogo from "@/components/GuardianAngelLogo";
 
 export default function Home() {
   const searchParams = useSearchParams();
   const emergency = searchParams.get("emergency") === "true";
+  const { toast } = useToast();
 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [activeMonitoringState, setActiveMonitoringState] = useState<boolean>(() => {
@@ -142,6 +146,67 @@ export default function Home() {
       return false;
   });
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+
+    useEffect(() => {
+        const getCameraPermission = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                setHasCameraPermission(true);
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                setHasCameraPermission(false);
+                toast({
+                    variant: 'destructive',
+                    title: 'Camera Access Denied',
+                    description: 'Please enable camera permissions in your browser settings to use this app.',
+                });
+            }
+        };
+
+        getCameraPermission();
+    }, [toast]);
+
+  const triggerEmergencySequence = async () => {
+      toast({
+          title: "Emergency sequence initiated!",
+          description: "Recording video and audio and assessing the situation...",
+      });
+
+      try {
+          // Simulate recording video and audio
+          const videoUrl = "https://example.com/simulated-video.mp4";
+          const audioUrl = "https://example.com/simulated-audio.mp3";
+          const frontCameraPicture = "https://picsum.photos/200/300"; // Placeholder
+          const rearCameraPicture = "https://picsum.photos/200/300"; // Placeholder
+          const location = await getCurrentLocation();
+
+          // Store event details in local storage
+          const eventData = {
+              date: new Date().toLocaleDateString(),
+              time: new Date().toLocaleTimeString(),
+              frontCameraPicture,
+              rearCameraPicture,
+              videoUrl,
+              gpsCoordinates: `${location.lat}, ${location.lng}`,
+          };
+
+          // Persist the new event
+          localStorage.setItem('lastEmergencyEvent', JSON.stringify(eventData));
+
+      } catch (error: any) {
+          toast({
+              title: "Error assessing situation",
+              description: error.message,
+              variant: "destructive",
+          });
+      }
+  };
 
   return (
     <div className="flex flex-col h-screen w-screen items-center justify-start bg-background text-foreground">
@@ -160,12 +225,12 @@ export default function Home() {
       {emergency && <EmergencyDisplay />}
 
       <div className="flex flex-col items-center justify-center space-y-4">
-        <ActiveMonitoringButton
-          activeMonitoring={activeMonitoring}
-          toggleActiveMonitoring={toggleActiveMonitoring}
-          className="w-72"
-        />
-        <PanicButton className="w-72" />
+          <ActiveMonitoringButton
+              activeMonitoring={activeMonitoring}
+              toggleActiveMonitoring={toggleActiveMonitoring}
+              className="w-72"
+          />
+        <PanicButton className="w-72" triggerEmergencySequence={triggerEmergencySequence} />
           <Dialog>
               <DialogTrigger asChild>
                   <Button variant="outline">Show Saved Info</Button>
@@ -233,6 +298,8 @@ export default function Home() {
       <div className="absolute top-4 right-4">
         <SettingsButton updateSoundEnabled={updateSoundEnabled} />
       </div>
+      <video ref={videoRef} className="w-0 h-0" autoPlay muted style={{ position: "absolute", left: -1000, top: -1000 }} />
     </div>
   );
 }
+
