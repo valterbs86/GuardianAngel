@@ -6,6 +6,7 @@ import { SettingsButton } from "@/components/SettingsButton";
 import { Toaster } from "@/components/ui/toaster";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { InitializeButtonSequence } from "@/components/InitializeButtonSequence";
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -47,7 +48,7 @@ export default function Home() {
       </div>
       {emergency && <EmergencyDisplay />}
       <PanicButton />
+      <InitializeButtonSequence />
     </div>
   );
 }
-

@@ -4,19 +4,6 @@ let detectedSequence: string[] = [];
 let storedSequence: string | null = null;
 let callback: (() => void) | null = null;
 
-export const initializeButtonSequenceDetection = () => {
-  if (typeof window === 'undefined') {
-    // Skip initialization on server-side
-    return;
-  }
-
-  // Load the button sequence from localStorage when the app starts
-  storedSequence = localStorage.getItem('buttonSequence');
-  console.log("loaded sequence:" + storedSequence);
-  // Add event listeners for keydown events
-  window.addEventListener('keydown', handleKeyDown);
-};
-
 export const setPanicCallback = async (cb: () => void) => {
   callback = cb;
 };
@@ -29,11 +16,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
   const keyName = event.key.toLowerCase();
   detectedSequence.push(keyName);
   console.log("keydown:" + keyName);
-  const sequenceArray = storedSequence.split(',');
+  const sequenceArray = storedSequence?.split(',');
 
-  if (detectedSequence.length > sequenceArray.length) {
+  if (detectedSequence.length > (sequenceArray?.length ?? 0)) {
     // Reset the sequence if it becomes longer than the expected sequence
-    detectedSequence = detectedSequence.slice(detectedSequence.length - sequenceArray.length);
+    detectedSequence = detectedSequence.slice(detectedSequence.length - (sequenceArray?.length ?? 0));
   }
 
   const currentSequence = detectedSequence.join(',');
@@ -55,4 +42,17 @@ export const resetSequence = async () => {
 export const setStoredSequence = async (sequence: string) => {
   storedSequence = sequence;
 };
+
+// export const initializeButtonSequenceDetection = () => {
+//   if (typeof window === 'undefined') {
+//     // Skip initialization on server-side
+//     return;
+//   }
+
+//   // Load the button sequence from localStorage when the app starts
+//   storedSequence = localStorage.getItem('buttonSequence');
+//   console.log("loaded sequence:" + storedSequence);
+//   // Add event listeners for keydown events
+//   window.addEventListener('keydown', handleKeyDown);
+// };
 
