@@ -55,7 +55,7 @@ export default function Home() {
       {/* App Logo Placeholder */}
       <div className="mt-8 mb-4">
         {/* Replace with your app logo */}
-        <img src="https://picsum.photos/100/50" alt="App Logo" className="h-12" />
+        <img src="/guardian-angel-logo-neon.svg" alt="Guardian Angel Logo" className="h-20" />
       </div>
 
       {emergency && <EmergencyDisplay />}

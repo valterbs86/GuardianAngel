@@ -1,0 +1,19 @@
+<svg width="100" height="100" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_0_1)">
+<path d="M100 25L25 58.3333V133.333L100 166.667L175 133.333V58.3333L100 25Z" stroke="#7DF9FF" stroke-width="8.33333" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M58.3333 58.3333L100 91.6667L141.667 58.3333" stroke="#7DF9FF" stroke-width="8.33333" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M41.6667 75L100 116.667L158.333 75" stroke="#7DF9FF" stroke-width="8.33333" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25 91.6667L100 133.333L175 91.6667" stroke="#7DF9FF" stroke-width="8.33333" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M43.8889 75C43.8889 75 53.2222 64.8889 67.7778 65" stroke="#7DF9FF" stroke-width="8.33333" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M156.111 75C156.111 75 146.778 64.8889 132.222 65" stroke="#7DF9FF" stroke-width="8.33333" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M100 175C72.8909 175 50 152.109 50 125C50 97.8909 72.8909 75 100 75C127.109 75 150 97.8909 150 125C150 152.109 127.109 175 100 175Z" stroke="#7DF9FF" stroke-width="8.33333" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M67.7778 65C67.7778 65 72.3333 47.3333 100 47.3333C127.667 47.3333 132.222 65 132.222 65" stroke="#7DF9FF" stroke-width="8.33333" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<defs>
+<clipPath id="clip0_0_1">
+<rect width="150" height="150" fill="white" transform="translate(25 25)"/>
+</clipPath>
+</defs>
+<text x="50%" y="80%" dominant-baseline="middle" text-anchor="middle" font-size="20" fill="#7DF9FF">Guardian</text>
+<text x="50%" y="90%" dominant-baseline="middle" text-anchor="middle" font-size="20" fill="#7DF9FF">Angel</text>
+</svg>
