@@ -1,17 +1,35 @@
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-export function AppSettings() {
+interface AppSettingsProps {
+  updateSoundEnabled: (enabled: boolean) => void;
+}
+
+export function AppSettings({ updateSoundEnabled }: AppSettingsProps) {
   const [shareLocation, setShareLocation] = useState(true);
   const [sendNotifications, setSendNotifications] = useState(true);
   const [triggerSoundAlarm, setTriggerSoundAlarm] = useState(true);
   const [showInfoOnScreen, setShowInfoOnScreen] = useState(true);
   const [emergencyUnlockPin, setEmergencyUnlockPin] = useState(true);
   const [cloudBackup, setCloudBackup] = useState(true);
+
+  useEffect(() => {
+    // Retrieve triggerSoundAlarm from localStorage
+    const storedTriggerSoundAlarm = localStorage.getItem("triggerSoundAlarm");
+    if (storedTriggerSoundAlarm) {
+      setTriggerSoundAlarm(JSON.parse(storedTriggerSoundAlarm));
+    }
+  }, []);
+
+  // Function to update triggerSoundAlarm state and store it in localStorage
+  const updateTriggerSoundAlarm = (enabled: boolean) => {
+    setTriggerSoundAlarm(enabled);
+    localStorage.setItem("triggerSoundAlarm", JSON.stringify(enabled));
+    updateSoundEnabled(enabled);
+  };
 
   return (
     <div className="settings-panel">
@@ -40,7 +58,7 @@ export function AppSettings() {
         <Switch
           id="triggerSoundAlarm"
           checked={triggerSoundAlarm}
-          onCheckedChange={(checked) => setTriggerSoundAlarm(checked)}
+          onCheckedChange={(checked) => updateTriggerSoundAlarm(checked)}
         />
       </div>
 
@@ -73,3 +91,4 @@ export function AppSettings() {
     </div>
   );
 }
+

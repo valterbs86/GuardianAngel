@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,11 @@ import { EmergencyContacts } from "@/components/EmergencyContacts";
 import { AlertHistory } from "@/components/AlertHistory";
 import { AppSettings } from "@/components/AppSettings";
 
-export function SettingsButton() {
+interface SettingsButtonProps {
+  updateSoundEnabled: (enabled: boolean) => void;
+}
+
+export function SettingsButton({ updateSoundEnabled }: SettingsButtonProps) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -50,7 +53,7 @@ export function SettingsButton() {
             <AlertHistory />
           </TabsContent>
           <TabsContent value="app">
-            <AppSettings />
+            <AppSettings updateSoundEnabled={updateSoundEnabled} />
           </TabsContent>
         </Tabs>
       </SheetContent>

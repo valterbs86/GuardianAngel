@@ -1,4 +1,4 @@
-// detect-fall.ts
+/ detect-fall.ts
 'use server';
 
 /**
@@ -13,6 +13,7 @@ import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
 import {sendSms} from '@/services/sms';
 import {getCurrentLocation} from '@/services/location';
+import {redirect} from 'next/navigation';
 
 const DetectFallInputSchema = z.object({
   accelerometerData: z.array(z.number()).describe('Accelerometer data readings.'),
@@ -83,6 +84,7 @@ const detectFallFlow = ai.defineFlow<
       const location = await getCurrentLocation();
       const message = `Fall detected! User location: Lat ${location.lat}, Lng ${location.lng}. ${output.message ?? ''}. Vital Info: ${input.vitalInfo}`;
       await sendSms(input.emergencyContactNumber, message);
+      redirect('/?emergency=true');
       return {
         fallDetected: true,
         message,
