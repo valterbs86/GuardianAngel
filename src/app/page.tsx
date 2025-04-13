@@ -20,9 +20,9 @@ import {Input} from "@/components/ui/input";
 import {Switch} from "@/components/ui/switch";
 import {useToast} from "@/hooks/use-toast";
 import {getCurrentLocation} from "@/services/location";
-import {Play, PauseSquare} from "lucide-react";
+import {Play, PauseSquare, Gear} from "lucide-react";
 import {CheckCircle, XCircle} from "lucide-react";
-import {Gear} from "lucide-react";
+
 import {sendSms} from "@/services/sms";
 import {detectFall} from '@/ai/flows/detect-fall';
 
@@ -34,7 +34,7 @@ export default function Home() {
   const router = useRouter();
 
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [activeMonitoringState, setActiveMonitoringState] = useState(() => {
+  const [activeMonitoringState, setActiveMonitoringState => {
     if (typeof window !== 'undefined') {
       const storedValue = localStorage.getItem('activeMonitoring');
       return storedValue === 'true';
@@ -305,7 +305,7 @@ export default function Home() {
         />
       </div>
 
-      {emergency && <EmergencyDisplay/>}
+      {emergency && activeMonitoring && <EmergencyDisplay/>}
 
       <div className="flex flex-col items-center justify-center space-y-4">
         <ActiveMonitoringButton
@@ -430,6 +430,8 @@ export default function Home() {
     </div>
   );
 }
+
+
 
 
 
