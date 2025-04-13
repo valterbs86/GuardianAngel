@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,23 @@ export function EmergencyContacts() {
   ]);
   const [notificationMethod, setNotificationMethod] = useState("sms");
   const [personalizedMessage, setPersonalizedMessage] = useState("");
+
+  useEffect(() => {
+    // Load data from localStorage on component mount
+    const storedContacts = localStorage.getItem("emergencyContacts");
+    const storedNotificationMethod = localStorage.getItem("notificationMethod");
+    const storedPersonalizedMessage = localStorage.getItem("personalizedMessage");
+
+    if (storedContacts) {
+      setContacts(JSON.parse(storedContacts));
+    }
+    if (storedNotificationMethod) {
+      setNotificationMethod(storedNotificationMethod);
+    }
+    if (storedPersonalizedMessage) {
+      setPersonalizedMessage(storedPersonalizedMessage);
+    }
+  }, []);
 
   const addContact = () => {
     setContacts([
@@ -41,7 +57,11 @@ export function EmergencyContacts() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    // Handle form submission logic here
+    // Persist settings in localStorage
+    localStorage.setItem("emergencyContacts", JSON.stringify(contacts));
+    localStorage.setItem("notificationMethod", notificationMethod);
+    localStorage.setItem("personalizedMessage", personalizedMessage);
+
     console.log("Form submitted", {
       contacts,
       notificationMethod,

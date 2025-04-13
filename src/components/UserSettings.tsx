@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,9 +24,60 @@ export function UserSettings() {
   const [showMedicalConditions, setShowMedicalConditions] = useState(true);
   const [showVehicleInformation, setShowVehicleInformation] = useState(true);
 
+  useEffect(() => {
+    // Load settings from localStorage on component mount
+    const storedName = localStorage.getItem("name");
+    const storedAge = localStorage.getItem("age");
+    const storedAddress = localStorage.getItem("address");
+    const storedBloodType = localStorage.getItem("bloodType");
+    const storedMedicalConditions = localStorage.getItem("medicalConditions");
+    const storedVehicleInformation = localStorage.getItem("vehicleInformation");
+    const storedCloudProvider = localStorage.getItem("cloudProvider");
+    const storedPinCode = localStorage.getItem("pinCode");
+
+    const storedShowName = localStorage.getItem("showName");
+    const storedShowAge = localStorage.getItem("showAge");
+    const storedShowAddress = localStorage.getItem("showAddress");
+    const storedShowBloodType = localStorage.getItem("showBloodType");
+    const storedShowMedicalConditions = localStorage.getItem("showMedicalConditions");
+    const storedShowVehicleInformation = localStorage.getItem("showVehicleInformation");
+
+    if (storedName) setName(storedName);
+    if (storedAge) setAge(storedAge);
+    if (storedAddress) setAddress(storedAddress);
+    if (storedBloodType) setBloodType(storedBloodType);
+    if (storedMedicalConditions) setMedicalConditions(storedMedicalConditions);
+    if (storedVehicleInformation) setVehicleInformation(storedVehicleInformation);
+    if (storedCloudProvider) setCloudProvider(storedCloudProvider);
+    if (storedPinCode) setPinCode(storedPinCode);
+
+    if (storedShowName) setShowName(JSON.parse(storedShowName));
+    if (storedShowAge) setShowAge(JSON.parse(storedShowAge));
+    if (storedShowAddress) setShowAddress(JSON.parse(storedShowAddress));
+    if (storedShowBloodType) setShowBloodType(JSON.parse(storedShowBloodType));
+    if (storedShowMedicalConditions) setShowMedicalConditions(JSON.parse(storedShowMedicalConditions));
+    if (storedShowVehicleInformation) setShowVehicleInformation(JSON.parse(storedShowVehicleInformation));
+  }, []);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    // Handle form submission logic here
+    // Persist settings in localStorage
+    localStorage.setItem("name", name);
+    localStorage.setItem("age", age);
+    localStorage.setItem("address", address);
+    localStorage.setItem("bloodType", bloodType);
+    localStorage.setItem("medicalConditions", medicalConditions);
+    localStorage.setItem("vehicleInformation", vehicleInformation);
+    localStorage.setItem("cloudProvider", cloudProvider);
+    localStorage.setItem("pinCode", pinCode);
+
+    localStorage.setItem("showName", JSON.stringify(showName));
+    localStorage.setItem("showAge", JSON.stringify(showAge));
+    localStorage.setItem("showAddress", JSON.stringify(showAddress));
+    localStorage.setItem("showBloodType", JSON.stringify(showBloodType));
+    localStorage.setItem("showMedicalConditions", JSON.stringify(showMedicalConditions));
+    localStorage.setItem("showVehicleInformation", JSON.stringify(showVehicleInformation));
+
     console.log("Form submitted", {
       name,
       age,
