@@ -73,9 +73,10 @@ export default function Home() {
       {/* Advertisement Placeholder */}
       <div className="mt-auto mb-4">
         {/* Replace with your advertisement content */}
-        <img src="https://picsum.photos/320/50" alt="Advertisement" className="w-80 rounded-md" />
+        <img src="https://i.imgur.com/M86jQEL.png" alt="Prosegur Alarms Advertisement" className="w-80 rounded-md" />
       </div>
     </div>
   );
 }
+
 
