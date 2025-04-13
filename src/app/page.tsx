@@ -154,28 +154,28 @@ export default function Home() {
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [stopPanicConfirmed, setStopPanicConfirmed] = useState(false);
 
-    useEffect(() => {
-        const getCameraPermission = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                setHasCameraPermission(true);
+    // useEffect(() => {
+    //     const getCameraPermission = async () => {
+    //         try {
+    //             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    //             setHasCameraPermission(true);
 
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-                setHasCameraPermission(false);
-                toast({
-                    variant: 'destructive',
-                    title: 'Camera Access Denied',
-                    description: 'Please enable camera permissions in your browser settings to use this app.',
-                });
-            }
-        };
+    //             if (videoRef.current) {
+    //                 videoRef.current.srcObject = stream;
+    //             }
+    //         } catch (error) {
+    //             console.error('Error accessing camera:', error);
+    //             setHasCameraPermission(false);
+    //             toast({
+    //                 variant: 'destructive',
+    //                 title: 'Camera Access Denied',
+    //                 description: 'Please enable camera permissions in your browser settings to use this app.',
+    //             });
+    //         }
+    //     };
 
-        getCameraPermission();
-    }, [toast]);
+    //     getCameraPermission();
+    // }, [toast]);
 
   const triggerEmergencySequence = async () => {
       toast({
@@ -371,5 +371,6 @@ export default function Home() {
     </div>
   );
 }
+
 
 
