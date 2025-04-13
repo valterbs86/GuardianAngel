@@ -231,6 +231,27 @@ export default function Home() {
 
             // Clear emergency status from localStorage
             localStorage.removeItem('lastEmergencyEvent');
+
+                // Retrieve the last emergency event from localStorage
+                const lastEmergencyEvent = localStorage.getItem('lastEmergencyEvent');
+
+                if (lastEmergencyEvent) {
+                    // Parse the event data
+                    const eventData = JSON.parse(lastEmergencyEvent);
+
+                    // Retrieve alert history from localStorage
+                    const storedAlerts = localStorage.getItem("alertHistory");
+                    let alertHistory = storedAlerts ? JSON.parse(storedAlerts) : [];
+
+                    // Add the new event to the alert history
+                    alertHistory.push(eventData);
+
+                    // Persist the updated alert history
+                    localStorage.setItem("alertHistory", JSON.stringify(alertHistory));
+
+                    // Remove the last emergency event from local storage
+                    localStorage.removeItem('lastEmergencyEvent');
+                }
         } else {
             toast({
                 variant: 'destructive',
