@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentLocation } from "@/services/location";
 import { Play, PauseSquare } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 
 // import GuardianAngelLogo from "@/components/GuardianAngelLogo";
 
@@ -148,6 +149,10 @@ export default function Home() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const [emergencyPin, setEmergencyPin] = useState<string | null>(null);
+  const [pinInput, setPinInput] = useState('');
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [stopPanicConfirmed, setStopPanicConfirmed] = useState(false);
 
     useEffect(() => {
         const getCameraPermission = async () => {
@@ -208,6 +213,34 @@ export default function Home() {
       }
   };
 
+    const handleStopPanic = () => {
+        setShowPinDialog(true);
+        const storedPin = localStorage.getItem("pinCode");
+        setEmergencyPin(storedPin);
+    };
+
+    const validatePin = () => {
+        if (pinInput === emergencyPin) {
+            setStopPanicConfirmed(true);
+            setShowPinDialog(false);
+            setPinInput('');
+            toast({
+                title: "Emergency sequence stopped!",
+                description: "Emergency mode deactivated.",
+            });
+
+            // Clear emergency status from localStorage
+            localStorage.removeItem('lastEmergencyEvent');
+        } else {
+            toast({
+                variant: 'destructive',
+                title: "Incorrect PIN",
+                description: "Please enter the correct emergency PIN code.",
+            });
+            setPinInput('');
+        }
+    };
+
   return (
     <div className="flex flex-col h-screen w-screen items-center justify-start bg-background text-foreground">
       <Toaster />
@@ -230,7 +263,43 @@ export default function Home() {
               toggleActiveMonitoring={toggleActiveMonitoring}
               className="w-72"
           />
-        <PanicButton className="w-72" triggerEmergencySequence={triggerEmergencySequence} />
+        <div className="flex items-center justify-center">
+            <PanicButton className="w-72" triggerEmergencySequence={triggerEmergencySequence} />
+            {emergency && (
+                <Button
+                    variant="destructive"
+                    className="ml-4"
+                    onClick={handleStopPanic}
+                >
+                    Stop Panic
+                </Button>
+            )}
+        </div>
+          <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+              <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                      <DialogTitle>Enter Emergency PIN</DialogTitle>
+                      <DialogDescription>
+                          Please enter your emergency PIN code to stop the panic action.
+                      </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                          <label htmlFor="pin" className="text-right font-medium">
+                              PIN Code
+                          </label>
+                          <Input
+                              type="password"
+                              id="pin"
+                              value={pinInput}
+                              onChange={(e) => setPinInput(e.target.value)}
+                              className="col-span-3"
+                          />
+                      </div>
+                  </div>
+                  <Button onClick={validatePin}>Validate</Button>
+              </DialogContent>
+          </Dialog>
           <Dialog>
               <DialogTrigger asChild>
                   <Button variant="outline">Show Saved Info</Button>
@@ -302,4 +371,5 @@ export default function Home() {
     </div>
   );
 }
+
 
