@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ActiveMonitoringButton } from "@/components/ActiveMonitoringButton";
-import GuardianAngelLogo from "@/components/GuardianAngelLogo";
+// import GuardianAngelLogo from "@/components/GuardianAngelLogo";
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -56,7 +56,11 @@ export default function Home() {
       {/* App Logo Placeholder */}
       <div className="mt-8 mb-4">
         {/* Replace with your app logo */}
-        <GuardianAngelLogo className="h-20" />
+        <img
+            src="/GA logo.JPG" // Path to your logo image
+            alt="Guardian Angel Logo"
+            className="h-20"
+          />
       </div>
 
       {emergency && <EmergencyDisplay />}
@@ -78,4 +82,3 @@ export default function Home() {
     </div>
   );
 }
-
