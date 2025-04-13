@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 
 interface AppSettingsProps {
   updateSoundEnabled: (enabled: boolean) => void;
@@ -15,6 +16,7 @@ export function AppSettings({ updateSoundEnabled }: AppSettingsProps) {
   const [showInfoOnScreen, setShowInfoOnScreen] = useState(true);
   const [emergencyUnlockPin, setEmergencyUnlockPin] = useState(true);
   const [cloudBackup, setCloudBackup] = useState(true);
+  const [buttonSequence, setButtonSequence] = useState("");
 
   useEffect(() => {
     // Retrieve triggerSoundAlarm from localStorage
@@ -30,6 +32,21 @@ export function AppSettings({ updateSoundEnabled }: AppSettingsProps) {
     localStorage.setItem("triggerSoundAlarm", JSON.stringify(enabled));
     updateSoundEnabled(enabled);
   };
+
+  useEffect(() => {
+    // Load button sequence from localStorage on component mount
+    const storedButtonSequence = localStorage.getItem("buttonSequence");
+    if (storedButtonSequence) {
+      setButtonSequence(storedButtonSequence);
+    }
+  }, []);
+
+  const handleButtonSequenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSequence = e.target.value;
+    setButtonSequence(newSequence);
+    localStorage.setItem("buttonSequence", newSequence); // Store in localStorage
+  };
+
 
   return (
     <div className="settings-panel">
@@ -88,7 +105,22 @@ export function AppSettings({ updateSoundEnabled }: AppSettingsProps) {
           onCheckedChange={(checked) => setCloudBackup(checked)}
         />
       </div>
+
+      <div>
+        <Label htmlFor="buttonSequence">Button Press Sequence</Label>
+        <Input
+          type="text"
+          id="buttonSequence"
+          placeholder="Enter button sequence (e.g., volume-up,volume-down,power)"
+          value={buttonSequence}
+          onChange={handleButtonSequenceChange}
+        />
+        <p className="text-sm text-muted-foreground">
+          Define a sequence of button presses to trigger the panic button.
+        </p>
+      </div>
     </div>
   );
 }
+
 

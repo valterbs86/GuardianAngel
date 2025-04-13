@@ -1,9 +1,10 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { assessSituation } from "@/ai/flows/assess-situation";
+import { useEffect } from "react";
+import { initializeButtonSequenceDetection, setPanicCallback } from "@/services/buttonSequenceService";
 
 export function PanicButton() {
   const { toast } = useToast();
@@ -33,6 +34,16 @@ export function PanicButton() {
       });
     }
   };
+
+  useEffect(() => {
+    initializeButtonSequenceDetection();
+    setPanicCallback(triggerEmergencySequence);
+
+    // Cleanup function to remove the callback
+    return () => {
+      setPanicCallback(null);
+    };
+  }, []);
 
   return (
     <Button
