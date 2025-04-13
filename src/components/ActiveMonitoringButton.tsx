@@ -16,18 +16,22 @@ export function ActiveMonitoringButton({
 }: ActiveMonitoringButtonProps) {
   return (
     <Button
-      variant="default"
-      className={`flex flex-col items-center justify-center bg-background text-primary text-2xl font-bold rounded-full p-6 shadow-lg hover:bg-accent hover:text-accent-foreground ${className ?? ''}`}
+      variant="ghost"
+      className={`flex flex-col items-center justify-center text-2xl font-bold rounded-md p-6 shadow-lg ${
+        activeMonitoring
+          ? 'text-red-500 border-red-500 hover:bg-red-500 hover:text-background'
+          : 'text-green-500 border-green-500 hover:bg-green-500 hover:text-background'
+      } border-2 bg-transparent ${className ?? ''}`}
       onClick={toggleActiveMonitoring}
     >
       {activeMonitoring ? (
         <>
-          <Pause className="h-12 w-12 mb-2 text-red-500" />
+          <Pause className="h-12 w-12 mb-2" />
           Disable Monitoring
         </>
       ) : (
         <>
-          <Play className="h-12 w-12 mb-2 text-green-500" />
+          <Play className="h-12 w-12 mb-2" />
           Enable Active Monitoring
         </>
       )}
