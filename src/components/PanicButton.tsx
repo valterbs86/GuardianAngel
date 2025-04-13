@@ -5,9 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import { assessSituation } from "@/ai/flows/assess-situation";
 import { useEffect } from "react";
 import { setPanicCallback } from "@/services/buttonSequenceService";
-import { initializeButtonSequenceDetection } from "@/components/InitializeButtonSequence";
 
-export function PanicButton() {
+interface PanicButtonProps {
+    className?: string;
+}
+
+export function PanicButton({ className }: PanicButtonProps) {
   const { toast } = useToast();
 
   const triggerEmergencySequence = async () => {
@@ -48,7 +51,7 @@ export function PanicButton() {
   return (
     <Button
       variant="default"
-      className="bg-primary text-background text-4xl font-bold rounded-full p-12 shadow-lg hover:bg-accent hover:text-card"
+      className={`bg-primary text-background text-4xl font-bold rounded-full p-12 shadow-lg hover:bg-accent hover:text-card ${className ?? ''}`}
       onClick={triggerEmergencySequence}
     >
       Panic Button
