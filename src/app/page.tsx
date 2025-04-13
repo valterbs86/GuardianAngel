@@ -5,7 +5,7 @@ import { EmergencyDisplay } from "@/components/EmergencyDisplay";
 import { SettingsButton } from "@/components/SettingsButton";
 import { Toaster } from "@/components/ui/toaster";
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ActiveMonitoringButton } from "@/components/ActiveMonitoringButton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -22,6 +22,7 @@ export default function Home() {
   const searchParams = useSearchParams();
   const emergency = searchParams.get("emergency") === "true";
   const { toast } = useToast();
+    const router = useRouter();
 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [activeMonitoringState, setActiveMonitoringState] = useState<boolean>(() => {
@@ -203,6 +204,7 @@ export default function Home() {
 
           // Persist the new event
           localStorage.setItem('lastEmergencyEvent', JSON.stringify(eventData));
+              router.push('/?emergency=true');
 
       } catch (error: any) {
           toast({
@@ -252,6 +254,7 @@ export default function Home() {
                     // Remove the last emergency event from local storage
                     localStorage.removeItem('lastEmergencyEvent');
                 }
+            router.push('/');
         } else {
             toast({
                 variant: 'destructive',
@@ -392,6 +395,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
