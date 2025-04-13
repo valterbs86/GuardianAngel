@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Trash } from "lucide-react";
 
 export function EmergencyContacts() {
   const [contacts, setContacts] = useState([
@@ -52,6 +53,11 @@ export function EmergencyContacts() {
     const updatedContacts = contacts.map((contact) =>
       contact.id === id ? { ...contact, [field]: value } : contact
     );
+    setContacts(updatedContacts);
+  };
+
+  const deleteContact = (id: number) => {
+    const updatedContacts = contacts.filter((contact) => contact.id !== id);
     setContacts(updatedContacts);
   };
 
@@ -112,6 +118,14 @@ export function EmergencyContacts() {
               placeholder="Enter email address"
             />
           </div>
+           <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              onClick={() => deleteContact(contact.id)}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
         </div>
       ))}
 
