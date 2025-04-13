@@ -92,9 +92,10 @@ const detectFallFlow = ai.defineFlow<
 
     if (output?.fallDetected) {
       const location = await getCurrentLocation();
-      const message = `Fall detected! User location: Lat ${location.lat}, Lng ${location.lng}. ${output.message ?? ''}. Vital Info: ${input.vitalInfo}`;
+      const message = `Fall detected! User location: Lat ${location.lat}, Lng ${location.lng}. ${output.message ?? ''}. Vital Info: ${input.vitalInfo}. Active Monitoring: ${activeMonitoring}`;
       await sendSms(input.emergencyContactNumber, message);
-      redirect('/?emergency=true');
+      cookies().set('emergency', 'true', { path: '/' });
+
       return {
         fallDetected: true,
         message,
