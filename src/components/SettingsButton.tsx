@@ -24,7 +24,7 @@ export function SettingsButton({ updateSoundEnabled }: SettingsButtonProps) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" className="hover:bg-accent hover:text-accent-foreground p-2">
+        <Button variant="outline" className="hover:bg-accent hover:text-accent-foreground p-2 flex items-center">
           <Settings className="mr-2 h-4 w-4" />
         </Button>
       </SheetTrigger>
