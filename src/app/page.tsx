@@ -14,7 +14,15 @@ export default function Home() {
   const emergency = searchParams.get("emergency") === "true";
 
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [activeMonitoring, setActiveMonitoring] = useState(false); // State for active monitoring
+  const [activeMonitoringState, setActiveMonitoringState] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const storedValue = localStorage.getItem('activeMonitoring');
+      return storedValue === 'true';
+    }
+    return false;
+  });
+
+  const activeMonitoring = activeMonitoringState;
 
   useEffect(() => {
     if (emergency && soundEnabled) {
@@ -43,7 +51,9 @@ export default function Home() {
   };
 
   const toggleActiveMonitoring = () => {
-    setActiveMonitoring(!activeMonitoring);
+    const newState = !activeMonitoring;
+    setActiveMonitoringState(newState);
+    localStorage.setItem('activeMonitoring', newState.toString());
   };
 
   return (
@@ -82,5 +92,4 @@ export default function Home() {
     </div>
   );
 }
-
 

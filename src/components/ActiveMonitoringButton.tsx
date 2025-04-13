@@ -14,10 +14,11 @@ export function ActiveMonitoringButton({
   toggleActiveMonitoring,
   className
 }: ActiveMonitoringButtonProps) {
+
   return (
     <Button
       variant="ghost"
-      className={`flex flex-col items-center justify-center text-2xl font-bold rounded-md p-6 shadow-lg ${
+      className={`flex flex-col items-center justify-center text-3xl font-bold rounded-md p-4 shadow-lg ${
         activeMonitoring
           ? 'text-red-500 border-red-500 hover:bg-red-500 hover:text-background'
           : 'text-green-500 border-green-500 hover:bg-green-500 hover:text-background'
