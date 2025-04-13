@@ -22,7 +22,7 @@ export function AlertHistory() {
         const dateA = new Date(a.date + " " + a.time);
         const dateB = new Date(b.date + " " + b.time);
         return dateB.getTime() - dateA.getTime();
-      });
+       });
       setAlerts(sortedAlerts);
     } else {
       setAlerts([]); // Ensure alerts is an empty array if no data is found
@@ -94,3 +94,4 @@ export function AlertHistory() {
     </div>
   );
 }
+
