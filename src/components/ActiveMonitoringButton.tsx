@@ -16,8 +16,8 @@ export function ActiveMonitoringButton({
 }: ActiveMonitoringButtonProps) {
   return (
     <Button
-      variant="outline"
-      className={className}
+      variant="default"
+      className={`bg-primary text-background text-4xl font-bold rounded-full p-12 shadow-lg hover:bg-accent hover:text-card ${className ?? ''}`}
       onClick={toggleActiveMonitoring}
     >
       {activeMonitoring ? (
@@ -34,3 +34,4 @@ export function ActiveMonitoringButton({
     </Button>
   );
 }
+
