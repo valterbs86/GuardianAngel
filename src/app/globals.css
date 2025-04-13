@@ -88,3 +88,59 @@ body {
   }
 }
 
+/* Styles for Settings Panel Components */
+.settings-panel {
+  @apply space-y-4;
+}
+
+.settings-panel h2 {
+  @apply text-2xl font-bold mb-2;
+}
+
+.settings-panel h3 {
+  @apply text-lg font-semibold mt-4 mb-2;
+}
+
+.settings-panel label {
+  @apply block text-sm font-medium text-foreground mb-1;
+}
+
+.settings-panel input[type="text"],
+.settings-panel input[type="number"],
+.settings-panel input[type="email"],
+.settings-panel select,
+.settings-panel textarea {
+  @apply bg-secondary text-secondary-foreground shadow-sm border border-input rounded-md py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.settings-panel .checkbox-group {
+  @apply flex items-center space-x-2;
+}
+
+.settings-panel .emergency-contact {
+  @apply border rounded-md p-4 mb-2;
+}
+
+.settings-panel .emergency-contact label {
+  @apply mt-2;
+}
+
+.settings-panel .alert-history-item {
+  @apply border rounded-md p-4 mb-2 cursor-pointer hover:bg-accent hover:text-accent-foreground;
+}
+
+.settings-panel .alert-history-item h4 {
+  @apply text-lg font-semibold;
+}
+
+.settings-panel .alert-history-item p {
+  @apply text-sm text-muted-foreground;
+}
+
+.settings-panel .app-setting {
+  @apply flex items-center justify-between py-2;
+}
+
+.settings-panel .app-setting label {
+  @apply mr-2;
+}
