@@ -34,7 +34,7 @@ export default function Home() {
   const router = useRouter();
 
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [activeMonitoringState, setActiveMonitoringState => {
+  const [activeMonitoringState, setActiveMonitoringState] = useState(() => {
     if (typeof window !== 'undefined') {
       const storedValue = localStorage.getItem('activeMonitoring');
       return storedValue === 'true';
@@ -430,8 +430,4 @@ export default function Home() {
     </div>
   );
 }
-
-
-
-
 
