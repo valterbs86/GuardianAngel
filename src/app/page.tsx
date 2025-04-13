@@ -182,48 +182,66 @@ export default function Home() {
                               Name
                           </label>
                           <Input type="text" id="name" value={name} readOnly className="col-span-3" />
-                          {showName && <span className="text-green-500"> (Enabled on Emergency Screen)</span>}
-                          {!showName && <span className="text-red-500"> (Disabled on Emergency Screen)</span>}
+                          {showName ? (
+                              <Button variant="ghost" size="sm">Enabled</Button>
+                          ) : (
+                              <Button variant="outline" size="sm">Disabled</Button>
+                          )}
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                           <label htmlFor="age" className="text-right font-medium">
                               Age
                           </label>
                           <Input type="text" id="age" value={age} readOnly className="col-span-3" />
-                          {showAge && <span className="text-green-500"> (Enabled on Emergency Screen)</span>}
-                          {!showAge && <span className="text-red-500"> (Disabled on Emergency Screen)</span>}
+                          {showAge ? (
+                              <Button variant="ghost" size="sm">Enabled</Button>
+                          ) : (
+                              <Button variant="outline" size="sm">Disabled</Button>
+                          )}
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                           <label htmlFor="address" className="text-right font-medium">
                               Address
                           </label>
                           <Input type="text" id="address" value={address} readOnly className="col-span-3" />
-                          {showAddress && <span className="text-green-500"> (Enabled on Emergency Screen)</span>}
-                          {!showAddress && <span className="text-red-500"> (Disabled on Emergency Screen)</span>}
+                          {showAddress ? (
+                              <Button variant="ghost" size="sm">Enabled</Button>
+                          ) : (
+                              <Button variant="outline" size="sm">Disabled</Button>
+                          )}
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                           <label htmlFor="bloodType" className="text-right font-medium">
                               Blood Type
                           </label>
                           <Input type="text" id="bloodType" value={bloodType} readOnly className="col-span-3" />
-                          {showBloodType && <span className="text-green-500"> (Enabled on Emergency Screen)</span>}
-                          {!showBloodType && <span className="text-red-500"> (Disabled on Emergency Screen)</span>}
+                          {showBloodType ? (
+                              <Button variant="ghost" size="sm">Enabled</Button>
+                          ) : (
+                              <Button variant="outline" size="sm">Disabled</Button>
+                          )}
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                           <label htmlFor="medicalConditions" className="text-right font-medium">
                               Medical Conditions
                           </label>
                           <Input type="text" id="medicalConditions" value={medicalConditions} readOnly className="col-span-3" />
-                          {showMedicalConditions && <span className="text-green-500"> (Enabled on Emergency Screen)</span>}
-                          {!showMedicalConditions && <span className="text-red-500"> (Disabled on Emergency Screen)</span>}
+                          {showMedicalConditions ? (
+                              <Button variant="ghost" size="sm">Enabled</Button>
+                          ) : (
+                              <Button variant="outline" size="sm">Disabled</Button>
+                          )}
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                           <label htmlFor="vehicleInformation" className="text-right font-medium">
                               Vehicle Information
                           </label>
                           <Input type="text" id="vehicleInformation" value={vehicleInformation} readOnly className="col-span-3" />
-                          {showVehicleInformation && <span className="text-green-500"> (Enabled on Emergency Screen)</span>}
-                          {!showVehicleInformation && <span className="text-red-500"> (Disabled on Emergency Screen)</span>}
+                          {showVehicleInformation ? (
+                              <Button variant="ghost" size="sm">Enabled</Button>
+                          ) : (
+                              <Button variant="outline" size="sm">Disabled</Button>
+                          )}
                       </div>
                   </div>
               </DialogContent>
@@ -241,6 +259,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
