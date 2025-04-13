@@ -23,6 +23,9 @@ import {getCurrentLocation} from "@/services/location";
 import {Play, PauseSquare} from "lucide-react";
 import {CheckCircle, XCircle} from "lucide-react";
 import {Gear} from "lucide-react";
+import {sendSms} from "@/services/sms";
+import {detectFall} from '@/ai/flows/detect-fall';
+
 
 // import GuardianAngelLogo from "@/components/GuardianAngelLogo";
 
@@ -427,3 +430,4 @@ export default function Home() {
     </div>
   );
 }
+
