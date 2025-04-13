@@ -14,6 +14,7 @@ import {z} from 'genkit';
 import {sendSms} from '@/services/sms';
 import {getCurrentLocation} from '@/services/location';
 import {redirect} from 'next/navigation';
+import { cookies } from 'next/headers';
 
 const DetectFallInputSchema = z.object({
   accelerometerData: z.array(z.number()).describe('Accelerometer data readings.'),
@@ -73,6 +74,15 @@ const detectFallFlow = ai.defineFlow<
     outputSchema: DetectFallOutputSchema,
   },
   async input => {
+    const activeMonitoringCookie = cookies().get('activeMonitoring');
+    const activeMonitoring = activeMonitoringCookie?.value === 'true';
+
+    if (!activeMonitoring) {
+      return {
+        fallDetected: false,
+      };
+    }
+
     const {output} = await detectFallPrompt({
       accelerometerData: JSON.stringify(input.accelerometerData),
       gyroscopeData: JSON.stringify(input.gyroscopeData),

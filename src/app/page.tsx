@@ -6,13 +6,14 @@ import { SettingsButton } from "@/components/SettingsButton";
 import { Toaster } from "@/components/ui/toaster";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { InitializeButtonSequence } from "@/components/InitializeButtonSequence";
+import { ActiveMonitoringButton } from "@/components/ActiveMonitoringButton";
 
 export default function Home() {
   const searchParams = useSearchParams();
   const emergency = searchParams.get("emergency") === "true";
 
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [activeMonitoring, setActiveMonitoring] = useState(false); // State for active monitoring
 
   useEffect(() => {
     if (emergency && soundEnabled) {
@@ -40,15 +41,37 @@ export default function Home() {
     localStorage.setItem("soundEnabled", JSON.stringify(enabled));
   };
 
+  const toggleActiveMonitoring = () => {
+    setActiveMonitoring(!activeMonitoring);
+  };
+
   return (
-    <div className="flex flex-col h-screen w-screen items-center justify-center bg-background text-foreground">
+    <div className="flex flex-col h-screen w-screen items-center justify-start bg-background text-foreground">
       <Toaster />
       <div className="absolute top-4 left-4">
         <SettingsButton updateSoundEnabled={updateSoundEnabled} />
       </div>
+
+      {/* App Logo Placeholder */}
+      <div className="mt-8 mb-4">
+        {/* Replace with your app logo */}
+        <img src="https://picsum.photos/100/50" alt="App Logo" className="h-12" />
+      </div>
+
       {emergency && <EmergencyDisplay />}
+
       <PanicButton />
-      <InitializeButtonSequence />
+
+      <ActiveMonitoringButton
+        activeMonitoring={activeMonitoring}
+        toggleActiveMonitoring={toggleActiveMonitoring}
+      />
+
+      {/* Advertisement Placeholder */}
+      <div className="mt-auto mb-4">
+        {/* Replace with your advertisement content */}
+        <img src="https://picsum.photos/320/50" alt="Advertisement" className="w-80 rounded-md" />
+      </div>
     </div>
   );
 }
