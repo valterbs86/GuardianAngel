@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Play, Square } from "lucide-react";
 
 interface ActiveMonitoringButtonProps {
   activeMonitoring: boolean;
@@ -19,7 +20,17 @@ export function ActiveMonitoringButton({
       className={className}
       onClick={toggleActiveMonitoring}
     >
-      {activeMonitoring ? "Disable Monitoring" : "Enable Active Monitoring"}
+      {activeMonitoring ? (
+        <>
+          <Square className="mr-2 h-4 w-4" />
+          Disable Monitoring
+        </>
+      ) : (
+        <>
+          <Play className="mr-2 h-4 w-4" />
+          Enable Active Monitoring
+        </>
+      )}
     </Button>
   );
 }
