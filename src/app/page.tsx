@@ -23,10 +23,6 @@ import {getCurrentLocation} from "@/services/location";
 import {Play, PauseSquare, Gear} from "lucide-react";
 import {CheckCircle, XCircle} from "lucide-react";
 
-import {sendSms} from "@/services/sms";
-import {detectFall} from '@/ai/flows/detect-fall';
-
-
 // import GuardianAngelLogo from "@/components/GuardianAngelLogo";
 
 export default function Home() {
@@ -47,6 +43,16 @@ export default function Home() {
     }
     return false;
   });
+  const [emergencyIndicatorVisible, setEmergencyIndicatorVisible] = useState(false);
+
+
+  useEffect(() => {
+    if (emergency) {
+      setEmergencyIndicatorVisible(true);
+    } else {
+      setEmergencyIndicatorVisible(false);
+    }
+  }, [emergency]);
 
 
   const activeMonitoring = activeMonitoringState;
@@ -160,7 +166,7 @@ export default function Home() {
       return localStorage.getItem("showBloodType") === 'true';
     }
     return false;
-  });
+   });
   const [showMedicalConditions, setShowMedicalConditions] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem("showMedicalConditions") === 'true';
@@ -205,6 +211,7 @@ export default function Home() {
   // }, [toast]);
 
   const triggerEmergencySequence = async () => {
+    setEmergencyIndicatorVisible(true);
     toast({
       title: "Emergency sequence initiated!",
       description: "Recording video and audio and assessing the situation...",
@@ -279,6 +286,7 @@ export default function Home() {
       localStorage.removeItem('lastEmergencyEvent');
       localStorage.setItem("emergency", 'false');
       setEmergency(false);
+      setEmergencyIndicatorVisible(false);
       router.push('/');
     } else {
       toast({
@@ -296,7 +304,14 @@ export default function Home() {
       <Toaster/>
 
       {/* App Logo Placeholder */}
-      <div className="mt-8 mb-4">
+      <div className="mt-8 mb-4 relative">
+        {/* Red Circle Indicator */}
+        {emergencyIndicatorVisible && (
+          <div
+            className="absolute top-0 left-0 w-4 h-4 bg-red-500 rounded-full"
+            style={{transform: 'translate(-50%, -50%)'}}
+          />
+        )}
         {/* Replace with your app logo */}
         <img
           src="/GA logo.JPG" // Path to your logo image
