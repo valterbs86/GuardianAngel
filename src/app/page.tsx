@@ -230,7 +230,7 @@ export default function Home() {
       // Persist the new event
       localStorage.setItem('lastEmergencyEvent', JSON.stringify(eventData));
       localStorage.setItem("emergency", 'true');
-      // setEmergency(true);
+      setEmergency(true);
 
     } catch (error: any) {
       toast({
@@ -430,5 +430,6 @@ export default function Home() {
     </div>
   );
 }
+
 
 
