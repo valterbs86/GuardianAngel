@@ -59,9 +59,6 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen w-screen items-center justify-start bg-background text-foreground">
       <Toaster />
-      <div className="absolute top-4 left-4">
-        <SettingsButton updateSoundEnabled={updateSoundEnabled} />
-      </div>
 
       {/* App Logo Placeholder */}
       <div className="mt-8 mb-4">
@@ -79,9 +76,9 @@ export default function Home() {
         <ActiveMonitoringButton
           activeMonitoring={activeMonitoring}
           toggleActiveMonitoring={toggleActiveMonitoring}
-          className="w-64 h-64"
+          className="w-72"
         />
-        <PanicButton className="w-64 h-64" />
+        <PanicButton className="w-72" />
       </div>
 
       {/* Advertisement Placeholder */}
@@ -89,7 +86,11 @@ export default function Home() {
         {/* Replace with your advertisement content */}
         <img src="/Advert logo.JPG" alt="Prosegur Alarms Advertisement" className="w-80 rounded-md" />
       </div>
+      <div className="absolute top-4 right-4">
+        <SettingsButton updateSoundEnabled={updateSoundEnabled} />
+      </div>
     </div>
   );
 }
+
 
