@@ -68,7 +68,7 @@ export function AlertHistory() {
           </h4>
           <p>Geolocation: {alert.gpsCoordinates}</p>
           <Button
-            variant="outline"
+            variant="destructive"
             size="icon"
             onClick={(e) => {
               e.stopPropagation(); // Prevent alert selection when deleting
