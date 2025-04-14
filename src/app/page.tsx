@@ -317,7 +317,7 @@ export default function Home() {
           src="/GA logo.JPG" // Path to your logo image
           alt="Guardian Angel Logo"
           className="h-20"
-          style={{ width: '125%', height: 'auto' }}
+          style={{ width: '106.25%', height: 'auto' }}
         />
       </div>
 
@@ -446,5 +446,6 @@ export default function Home() {
     </div>
   );
 }
+
 
 
