@@ -1,0 +1,1 @@
+This file indicates that the conversion to a Flutter application has commenced. Further changes will reflect the implementation of core features in Flutter.
