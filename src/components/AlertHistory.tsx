@@ -311,7 +311,7 @@ export function AlertHistory() {
 
       {isMapModalOpen && selectedAlert && selectedAlert.locationHistory && selectedAlert.locationHistory.length > 0 && defaultIcon && (
          <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
-            <DialogContent className="sm:max-w-3xl h-[80vh] flex flex-col">
+            <DialogContent key={`dialog-content-remount-${mapForceRemountKey}`} className="sm:max-w-3xl h-[80vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Route Map - Event ID: {selectedAlert.id}</DialogTitle>
                 </DialogHeader>
