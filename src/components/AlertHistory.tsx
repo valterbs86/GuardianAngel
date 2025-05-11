@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash } from "lucide-react";
 import {
@@ -10,14 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Polyline,
-} from "react-leaflet";
-// import "leaflet/dist/leaflet.css"; // This was problematic
+import type { LatLngExpression } from 'leaflet'; // Import LatLngExpression type
+import dynamic from 'next/dynamic';
 import { useToast } from "@/hooks/use-toast";
+
+// Dynamically import react-leaflet components
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const Polyline = dynamic(() => import('react-leaflet').then(mod => mod.Polyline), { ssr: false });
+
 
 // Define the type for an alert
 interface AlertEvent {
@@ -41,9 +43,11 @@ export function AlertHistory() {
   const [selectedAlert, setSelectedAlert] = useState<AlertEvent | null>(null);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
 
-  // Dynamically import leaflet CSS
   useEffect(() => {
+    setIsClient(true);
+    // Dynamically import leaflet CSS
     if (typeof window !== 'undefined') {
       import('leaflet/dist/leaflet.css').catch(err => console.error("Failed to load leaflet CSS", err));
     }
@@ -55,6 +59,7 @@ export function AlertHistory() {
   }, []);
 
   const loadAlerts = () => {
+    if (typeof window === 'undefined') return;
     const storedAlerts = localStorage.getItem("alertHistory");
     if (storedAlerts) {
       try {
@@ -81,6 +86,7 @@ export function AlertHistory() {
   };
 
   const deleteAllAlerts = () => {
+    if (typeof window === 'undefined') return;
     localStorage.removeItem("alertHistory");
     // Remove individual alert data and associated location history
     alerts.forEach(alert => {
@@ -96,6 +102,7 @@ export function AlertHistory() {
   };
 
   const deleteAlert = (alertIdToDelete: string) => {
+    if (typeof window === 'undefined') return;
     const updatedAlerts = alerts.filter((alert) => alert.id !== alertIdToDelete);
     localStorage.setItem("alertHistory", JSON.stringify(updatedAlerts));
     localStorage.removeItem(`panicEvent-${alertIdToDelete}`);
@@ -111,6 +118,7 @@ export function AlertHistory() {
   };
 
   const handleAlertClick = (alert: AlertEvent) => {
+    if (typeof window === 'undefined') return;
     const eventData = localStorage.getItem(`panicEvent-${alert.id}`);
     const locationData = localStorage.getItem(`locationHistory-${alert.id}`);
     if (eventData) {
@@ -136,17 +144,26 @@ export function AlertHistory() {
     }
   };
 
-  const L = typeof window !== 'undefined' ? require('leaflet') : null;
-  const defaultIcon = L ? new L.Icon({
-      iconUrl: '/marker-icon.png', 
-      iconRetinaUrl: '/marker-icon-2x.png', 
-      shadowUrl: '/marker-shadow.png', 
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-  }) : undefined;
+  const defaultIcon = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const L = require('leaflet');
+      return new L.Icon({
+          iconUrl: '/marker-icon.png',
+          iconRetinaUrl: '/marker-icon-2x.png',
+          shadowUrl: '/marker-shadow.png',
+          iconSize: [25, 41] as [number, number],
+          iconAnchor: [12, 41] as [number, number],
+          popupAnchor: [1, -34] as [number, number],
+          shadowSize: [41, 41] as [number, number]
+      });
+    }
+    return undefined;
+  }, [isClient]);
 
+
+  if (!isClient) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <div className="settings-panel p-4">
@@ -249,7 +266,7 @@ export function AlertHistory() {
                 </div>
               )}
 
-              {selectedAlert.locationHistory && selectedAlert.locationHistory.length > 0 && L && (
+              {selectedAlert.locationHistory && selectedAlert.locationHistory.length > 0 && (
                 <div className="mt-4">
                   <h3 className="text-lg font-semibold mb-2">Location History</h3>
                    <Button onClick={() => setIsMapModalOpen(true)} variant="outline" className="mb-2">View Route on Map</Button>
@@ -260,7 +277,7 @@ export function AlertHistory() {
         </Dialog>
       )}
 
-      {selectedAlert && selectedAlert.locationHistory && selectedAlert.locationHistory.length > 0 && L && isMapModalOpen && (
+      {selectedAlert && selectedAlert.locationHistory && selectedAlert.locationHistory.length > 0 && isMapModalOpen && defaultIcon && (
          <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
             <DialogContent className="sm:max-w-3xl h-[80vh] flex flex-col">
                 <DialogHeader>
@@ -269,7 +286,7 @@ export function AlertHistory() {
                 <div className="flex-grow mt-4">
                     { selectedAlert.locationHistory[0] ? (
                         <MapContainer
-                            center={[selectedAlert.locationHistory[0].lat, selectedAlert.locationHistory[0].lng]}
+                            center={[selectedAlert.locationHistory[0].lat, selectedAlert.locationHistory[0].lng] as LatLngExpression}
                             zoom={13}
                             style={{ height: "100%", width: "100%" }}
                             scrollWheelZoom={true}
@@ -279,15 +296,15 @@ export function AlertHistory() {
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                             />
-                            {defaultIcon && selectedAlert.locationHistory[0] && (
-                                <Marker position={[selectedAlert.locationHistory[0].lat, selectedAlert.locationHistory[0].lng]} icon={defaultIcon}>
+                            {selectedAlert.locationHistory[0] && (
+                                <Marker position={[selectedAlert.locationHistory[0].lat, selectedAlert.locationHistory[0].lng] as LatLngExpression} icon={defaultIcon}>
                                 </Marker>
                             )}
-                            {defaultIcon && selectedAlert.locationHistory.length > 1 && selectedAlert.locationHistory[selectedAlert.locationHistory.length-1] &&(
-                                 <Marker position={[selectedAlert.locationHistory[selectedAlert.locationHistory.length-1].lat, selectedAlert.locationHistory[selectedAlert.locationHistory.length-1].lng]} icon={defaultIcon}>
+                            {selectedAlert.locationHistory.length > 1 && selectedAlert.locationHistory[selectedAlert.locationHistory.length-1] &&(
+                                 <Marker position={[selectedAlert.locationHistory[selectedAlert.locationHistory.length-1].lat, selectedAlert.locationHistory[selectedAlert.locationHistory.length-1].lng] as LatLngExpression} icon={defaultIcon}>
                                  </Marker>
                             )}
-                            <Polyline positions={selectedAlert.locationHistory.map(p => [p.lat, p.lng])} color="blue" />
+                            <Polyline positions={selectedAlert.locationHistory.map(p => [p.lat, p.lng]) as LatLngExpression[]} color="blue" />
                         </MapContainer>
                     ) : (
                         <p>Location history is available but map cannot be centered.</p>

@@ -1,11 +1,12 @@
 'use client';
 
+import React, {Suspense} from 'react';
 import {PanicButton} from "@/components/PanicButton";
 import {EmergencyDisplay} from "@/components/EmergencyDisplay";
 import {SettingsButton} from "@/components/SettingsButton";
 import {Toaster} from "@/components/ui/toaster";
 import {useEffect, useState, useRef} from "react";
-import {useRouter} from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import {ActiveMonitoringButton} from "@/components/ActiveMonitoringButton";
 import {Button} from "@/components/ui/button";
 import {
@@ -19,53 +20,51 @@ import {
 import {Input} from "@/components/ui/input";
 import {Switch} from "@/components/ui/switch";
 import {useToast} from "@/hooks/use-toast";
-import {getCurrentLocation} from "@/services/location";
-import {Play, PauseSquare, Gear} from "lucide-react";
+import {getCurrentLocation, Location} from "@/services/location";
+import {Play, PauseSquare, Gear, StopCircle} from "lucide-react";
 import {CheckCircle, XCircle} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
 
 // import GuardianAngelLogo from "@/components/GuardianAngelLogo";
 
-export default function Home() {
+function HomeComponent() {
   const {toast} = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Safely access search parameters
+  const emergencyParam = searchParams.get('emergency');
 
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [activeMonitoringState, setActiveMonitoringState] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const storedValue = localStorage.getItem('activeMonitoring');
-      return storedValue === 'true';
-    }
-    return false;
-  });
-  const [emergency, setEmergency] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("emergency") === 'true';
-    }
-    return false;
-  });
+  const [activeMonitoringState, setActiveMonitoringState] = useState(false);
+  const [emergency, setEmergency] = useState<boolean>(false);
   const [emergencyIndicatorVisible, setEmergencyIndicatorVisible] = useState(false);
 
 
   useEffect(() => {
-    if (emergency) {
-      setEmergencyIndicatorVisible(true);
-    } else {
-      setEmergencyIndicatorVisible(false);
-    }
-  }, [emergency]);
-
-
-  const activeMonitoring = activeMonitoringState;
-
-  useEffect(() => {
-    // Retrieve emergency status from localStorage on component mount
     if (typeof window !== 'undefined') {
       const storedEmergency = localStorage.getItem("emergency");
       if (storedEmergency) {
         setEmergency(JSON.parse(storedEmergency));
       }
+
+      const storedSoundEnabled = localStorage.getItem("soundEnabled");
+      if (storedSoundEnabled) {
+        setSoundEnabled(JSON.parse(storedSoundEnabled));
+      }
+
+      const storedActiveMonitoring = localStorage.getItem('activeMonitoring');
+      if (storedActiveMonitoring) {
+        setActiveMonitoringState(storedActiveMonitoring === 'true');
+      }
     }
   }, []);
+
+  useEffect(() => {
+    setEmergencyIndicatorVisible(emergency);
+  }, [emergency]);
+
 
   useEffect(() => {
     if (emergency && soundEnabled) {
@@ -79,15 +78,6 @@ export default function Home() {
     }
   }, [emergency, soundEnabled]);
 
-  useEffect(() => {
-    // Retrieve soundEnabled from localStorage
-    if (typeof window !== 'undefined') {
-      const storedSoundEnabled = localStorage.getItem("soundEnabled");
-      if (storedSoundEnabled) {
-        setSoundEnabled(JSON.parse(storedSoundEnabled));
-      }
-    }
-  }, []);
 
   // Function to update soundEnabled state and store it in localStorage
   const updateSoundEnabled = (enabled: boolean) => {
@@ -98,7 +88,7 @@ export default function Home() {
   };
 
   const toggleActiveMonitoring = () => {
-    const newState = !activeMonitoring;
+    const newState = !activeMonitoringState;
     setActiveMonitoringState(newState);
     if (typeof window !== 'undefined') {
       localStorage.setItem('activeMonitoring', newState.toString());
@@ -106,157 +96,269 @@ export default function Home() {
   };
 
   // Retrieve user settings from local storage
-  const [name, setName] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("name") || "";
-    }
-    return "";
-  });
-  const [age, setAge] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("age") || "";
-    }
-    return "";
-  });
-  const [address, setAddress] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("address") || "";
-    }
-    return "";
-  });
-  const [bloodType, setBloodType] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("bloodType") || "";
-    }
-    return "";
-  });
-  const [medicalConditions, setMedicalConditions] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("medicalConditions") || "";
-    }
-    return "";
-  });
-  const [vehicleInformation, setVehicleInformation] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("vehicleInformation") || "";
-    }
-    return "";
-  });
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [address, setAddress] = useState("");
+  const [bloodType, setBloodType] = useState("");
+  const [medicalConditions, setMedicalConditions] = useState("");
+  const [vehicleInformation, setVehicleInformation] = useState("");
 
-  const [showName, setShowName] = useState(() => {
+  const [showName, setShowName] = useState(false);
+  const [showAge, setShowAge] = useState(false);
+  const [showAddress, setShowAddress] = useState(false);
+  const [showBloodType, setShowBloodType] = useState(false);
+  const [showMedicalConditions, setShowMedicalConditions] = useState(false);
+  const [showVehicleInformation, setShowVehicleInformation] = useState(false);
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem("showName") === 'true';
+      setName(localStorage.getItem("name") || "");
+      setAge(localStorage.getItem("age") || "");
+      setAddress(localStorage.getItem("address") || "");
+      setBloodType(localStorage.getItem("bloodType") || "");
+      setMedicalConditions(localStorage.getItem("medicalConditions") || "");
+      setVehicleInformation(localStorage.getItem("vehicleInformation") || "");
+      setShowName(localStorage.getItem("showName") === 'true');
+      setShowAge(localStorage.getItem("showAge") === 'true');
+      setShowAddress(localStorage.getItem("showAddress") === 'true');
+      setShowBloodType(localStorage.getItem("showBloodType") === 'true');
+      setShowMedicalConditions(localStorage.getItem("showMedicalConditions") === 'true');
+      setShowVehicleInformation(localStorage.getItem("showVehicleInformation") === 'true');
     }
-    return false;
-  });
-  const [showAge, setShowAge] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("showAge") === 'true';
-    }
-    return false;
-  });
-  const [showAddress, setShowAddress] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("showAddress") === 'true';
-    }
-    return false;
-  });
-  const [showBloodType, setShowBloodType] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("showBloodType") === 'true';
-    }
-    return false;
-   });
-  const [showMedicalConditions, setShowMedicalConditions] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("showMedicalConditions") === 'true';
-    }
-    return false;
-  });
-  const [showVehicleInformation, setShowVehicleInformation] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("showVehicleInformation") === 'true';
-    }
-    return false;
-  });
+  }, []);
+
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [emergencyPin, setEmergencyPin] = useState<string | null>(null);
   const [pinInput, setPinInput] = useState('');
   const [showPinDialog, setShowPinDialog] = useState(false);
-  const [stopPanicConfirmed, setStopPanicConfirmed] = useState(false);
 
-  // useEffect(() => {
-  //     const getCameraPermission = async () => {
-  //         try {
-  //             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-  //             setHasCameraPermission(true);
+  const [panicEventId, setPanicEventId] = useState<string | null>(null);
+  const locationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
 
-  //             if (videoRef.current) {
-  //                 videoRef.current.srcObject = stream;
-  //             }
-  //         } catch (error) {
-  //             console.error('Error accessing camera:', error);
-  //             setHasCameraPermission(false);
-  //             toast({
-  //                 variant: 'destructive',
-  //                 title: 'Camera Access Denied',
-  //                 description: 'Please enable camera permissions in your browser settings to use this app.',
-  //             });
-  //         }
-  //     };
 
-  //     getCameraPermission();
-  // }, [toast]);
+  const getCameraPermission = async (facingMode: 'user' | 'environment' = 'user') => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({
+          variant: 'destructive',
+          title: 'Camera API not supported',
+          description: 'Your browser does not support camera access.',
+        });
+        setHasCameraPermission(false);
+        return null;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode },
+          audio: true,
+        });
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        streamRef.current = stream;
+        return stream;
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+        return null;
+      }
+    };
 
-  const triggerEmergencySequence = async () => {
-    setEmergencyIndicatorVisible(true);
-    toast({
-      title: "Emergency sequence initiated!",
-      description: "Recording video and audio and assessing the situation...",
-    });
 
+  const capturePicture = async (facingMode: 'user' | 'environment'): Promise<string | null> => {
+    let streamToStop: MediaStream | null = null;
     try {
-      // Simulate recording video and audio
-      const videoUrl = "https://example.com/simulated-video.mp4";
-      const audioUrl = "https://example.com/simulated-audio.mp3";
-      const frontCameraPicture = "https://picsum.photos/200/300"; // Placeholder
-      const rearCameraPicture = "https://picsum.photos/200/300"; // Placeholder
-      const location = await getCurrentLocation();
+        const stream = await getCameraPermission(facingMode);
+        if (!stream || !videoRef.current) {
+          toast({ title: "Camera Error", description: "Camera stream not available.", variant: "destructive" });
+          return null;
+        }
+        streamToStop = stream; // Keep track of this stream to stop it later
 
-      // Store event details in local storage
-      const eventData = {
-        date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString(),
-        frontCameraPicture,
-        rearCameraPicture,
-        videoUrl,
-        gpsCoordinates: `${location.lat}, ${location.lng}`,
-      };
-      // Persist the new event
-      localStorage.setItem('lastEmergencyEvent', JSON.stringify(eventData));
-      localStorage.setItem("emergency", 'true');
-      setEmergency(true);
+        // Ensure video is playing to capture a frame
+        await videoRef.current.play();
 
-    } catch (error: any) {
-      toast({
-        title: "Error assessing situation",
-        description: error.message,
-        variant: "destructive",
-      });
+        return new Promise((resolve) => {
+            const handleCanPlay = () => {
+                if (videoRef.current) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = videoRef.current.videoWidth;
+                    canvas.height = videoRef.current.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(videoRef.current!, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/png'));
+                    } else {
+                        resolve(null);
+                    }
+                    videoRef.current.removeEventListener('canplay', handleCanPlay);
+                     // Stop the tracks of this specific stream
+                    streamToStop?.getTracks().forEach(track => track.stop());
+                }
+            };
+            if (videoRef.current) {
+                 videoRef.current.addEventListener('canplay', handleCanPlay, { once: true });
+            }
+        });
+    } catch (error) {
+        console.error(`Error capturing ${facingMode} picture:`, error);
+        toast({ title: `Capture Error (${facingMode})`, description: (error as Error).message, variant: "destructive" });
+         if (streamToStop) {
+            streamToStop.getTracks().forEach(track => track.stop());
+        }
+        return null;
     }
   };
 
-  const handleStopPanic = () => {
-    setShowPinDialog(true);
-    const storedPin = localStorage.getItem("pinCode");
-    setEmergencyPin(storedPin);
+
+  const startRecording = async () => {
+    if (!hasCameraPermission || !streamRef.current) {
+        const stream = await getCameraPermission('user'); // Default to user facing for recording
+        if (!stream) {
+            toast({ title: "Recording Error", description: "Failed to get camera stream for recording.", variant: "destructive" });
+            return;
+        }
+        streamRef.current = stream;
+    }
+
+    if (streamRef.current) {
+        try {
+            mediaRecorderRef.current = new MediaRecorder(streamRef.current, { mimeType: 'video/webm; codecs=vp9' });
+            recordedChunksRef.current = [];
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorderRef.current.onstop = async () => {
+                const videoBlob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+                const videoUrl = URL.createObjectURL(videoBlob);
+
+                if (typeof window !== 'undefined' && panicEventId) {
+                    const existingEventData = localStorage.getItem(`panicEvent-${panicEventId}`);
+                    if (existingEventData) {
+                        const parsedData = JSON.parse(existingEventData);
+                        parsedData.videoUrl = videoUrl; // Or save Blob directly if GCS handles it
+                        localStorage.setItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData));
+                    }
+                }
+                setIsRecording(false);
+            };
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+            toast({ title: "Recording Started", description: "Video and audio recording has begun." });
+        } catch (error) {
+            console.error('Failed to start recording:', error);
+            toast({ title: "Recording Error", description: `Failed to start recording: ${(error as Error).message}`, variant: "destructive" });
+            setIsRecording(false);
+        }
+    }
   };
 
-  const validatePin = () => {
-    if (pinInput === emergencyPin) {
-      setStopPanicConfirmed(true);
+  const stopRecordingAndReleaseCamera = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setHasCameraPermission(false); // Indicate camera is no longer in active use by the app
+    setIsRecording(false);
+    toast({ title: "Recording Stopped", description: "Video and audio recording has ended." });
+  };
+
+  const triggerEmergencySequence = async () => {
+    const permission = await getCameraPermission();
+    if (!permission) return;
+
+    setEmergency(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("emergency", 'true');
+    }
+    setEmergencyIndicatorVisible(true);
+
+    const newPanicEventId = `panic-${Date.now()}`;
+    setPanicEventId(newPanicEventId);
+
+    toast({
+      title: "Emergency sequence initiated!",
+      description: "Capturing data...",
+    });
+
+    const frontPicture = await capturePicture('user');
+    const rearPicture = await capturePicture('environment');
+    await startRecording();
+    const location = await getCurrentLocation();
+    const startTime = new Date();
+
+    const initialEventData = {
+      id: newPanicEventId,
+      date: startTime.toLocaleDateString(),
+      time: startTime.toLocaleTimeString(),
+      frontCameraPicture: frontPicture,
+      rearCameraPicture: rearPicture,
+      gpsCoordinates: `${location.lat}, ${location.lng}`,
+      locationHistory: [{ lat: location.lat, lng: location.lng, timestamp: startTime.toISOString() }],
+    };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`panicEvent-${newPanicEventId}`, JSON.stringify(initialEventData));
+    }
+
+    // Start tracking location
+    if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
+    locationIntervalRef.current = setInterval(async () => {
+      const currentLocation = await getCurrentLocation();
+      const currentTime = new Date();
+      if (typeof window !== 'undefined') {
+        const existingEventData = localStorage.getItem(`panicEvent-${newPanicEventId}`);
+        if (existingEventData) {
+          const parsedData = JSON.parse(existingEventData);
+          parsedData.locationHistory.push({ lat: currentLocation.lat, lng: currentLocation.lng, timestamp: currentTime.toISOString() });
+          localStorage.setItem(`panicEvent-${newPanicEventId}`, JSON.stringify(parsedData));
+        }
+      }
+    }, 5000); // Track every 5 seconds
+  };
+
+
+  const handleStopPanic = () => {
+    if (typeof window !== 'undefined') {
+      const storedPin = localStorage.getItem("pinCode");
+      if (!storedPin) {
+        toast({
+          variant: 'destructive',
+          title: "PIN Not Set",
+          description: "Please set an emergency PIN in settings.",
+        });
+        // Proceed to stop panic even if PIN is not set, or handle differently
+        // For now, we'll let it proceed to the dialog for consistency.
+      }
+      setEmergencyPin(storedPin);
+    }
+    setShowPinDialog(true);
+  };
+
+  const validatePin = async () => {
+    if (pinInput === emergencyPin || !emergencyPin) { // Allow stop if no PIN was set
       setShowPinDialog(false);
       setPinInput('');
       toast({
@@ -264,30 +366,43 @@ export default function Home() {
         description: "Emergency mode deactivated.",
       });
 
-      // Retrieve the last emergency event from localStorage
-      const lastEmergencyEvent = localStorage.getItem('lastEmergencyEvent');
+      if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
 
-      if (lastEmergencyEvent) {
-        // Parse the event data
-        const eventData = JSON.parse(lastEmergencyEvent);
+      const frontPictureStop = await capturePicture('user');
+      const rearPictureStop = await capturePicture('environment');
+      stopRecordingAndReleaseCamera(); // This will also save the video via onstop
+      const finalLocation = await getCurrentLocation();
+      const endTime = new Date();
 
-        // Retrieve alert history from localStorage
+
+      if (typeof window !== 'undefined' && panicEventId) {
+        const existingEventData = localStorage.getItem(`panicEvent-${panicEventId}`);
+        let alertHistory = [];
         const storedAlerts = localStorage.getItem("alertHistory");
-        let alertHistory = storedAlerts ? JSON.parse(storedAlerts) : [];
+        if (storedAlerts) {
+          alertHistory = JSON.parse(storedAlerts);
+        }
 
-        // Add the new event to the alert history
-        alertHistory.push(eventData);
-
-        // Persist the updated alert history
+        if (existingEventData) {
+          const parsedData = JSON.parse(existingEventData);
+          parsedData.frontCameraPictureStop = frontPictureStop;
+          parsedData.rearCameraPictureStop = rearCameraPictureStop;
+          parsedData.finalGpsCoordinates = `${finalLocation.lat}, ${finalLocation.lng}`;
+          parsedData.endTime = endTime.toLocaleTimeString();
+          // Video URL is set in mediaRecorder.onstop
+          localStorage.setItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData));
+          alertHistory.push(parsedData); // Add the completed event to history
+        }
         localStorage.setItem("alertHistory", JSON.stringify(alertHistory));
       }
 
-      // Clear emergency status from local storage
-      localStorage.removeItem('lastEmergencyEvent');
-      localStorage.setItem("emergency", 'false');
       setEmergency(false);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("emergency", 'false');
+      }
       setEmergencyIndicatorVisible(false);
-      router.push('/');
+      setPanicEventId(null);
+      // No need to router.push if we are already on the main page.
     } else {
       toast({
         variant: 'destructive',
@@ -298,154 +413,172 @@ export default function Home() {
     }
   };
 
-
   return (
-    <div className="flex flex-col h-screen w-screen items-center justify-start bg-background text-foreground">
+    <div className="flex flex-col h-screen w-screen items-center justify-start bg-background text-foreground p-4">
       <Toaster/>
 
-      {/* App Logo Placeholder */}
-      <div className="mt-8 mb-4 relative">
-        {/* Red Circle Indicator */}
-        {emergencyIndicatorVisible && (
-          <div
-            className="absolute top-0 left-0 w-4 h-4 bg-red-500 rounded-full"
-            style={{transform: 'translate(-50%, -50%)'}}
-          />
-        )}
-        {/* Replace with your app logo */}
-        <img
-          src="/GA logo.JPG" // Path to your logo image
-          alt="Guardian Angel Logo"
-          className="h-20"
-          style={{ width: '106.25%', height: 'auto' }}
-        />
-      </div>
-
-      {emergency && activeMonitoring && <EmergencyDisplay/>}
-
-      <div className="flex flex-col items-center justify-center space-y-4">
-        <ActiveMonitoringButton
-          activeMonitoring={activeMonitoring}
-          toggleActiveMonitoring={toggleActiveMonitoring}
-          className="w-72"
-        />
-        <div className="flex items-center justify-center">
-          <PanicButton className="w-72" triggerEmergencySequence={triggerEmergencySequence}/>
-          {emergency && (
-            <Button
-              variant="destructive"
-              className="ml-4"
-              onClick={handleStopPanic}
-            >
-              Stop Panic
-            </Button>
+      <div className="w-full max-w-md mx-auto">
+        {/* App Logo Placeholder */}
+        <div className="mt-8 mb-4 relative text-center">
+          {emergencyIndicatorVisible && (
+            <div
+              className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-red-500 rounded-full"
+            />
           )}
+          <img
+            src="/GA logo.JPG"
+            alt="Guardian Angel Logo"
+            className="h-16 inline-block" // Reduced size by 10% from h-20 (approx)
+            style={{ width: 'auto' }}
+          />
         </div>
-        <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Enter Emergency PIN</DialogTitle>
-              <DialogDescription>
-                Please enter your emergency PIN code to stop the panic action.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="pin" className="text-right font-medium">
-                  PIN Code
-                </label>
-                <Input
-                  type="password"
-                  id="pin"
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-            <Button onClick={validatePin}>Validate</Button>
-          </DialogContent>
-        </Dialog>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline">Show Saved Info</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Saved User Information</DialogTitle>
-              <DialogDescription>
-                This information is saved locally.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="name" className="text-right font-medium">
-                  Name
-                </label>
-                <Input type="text" id="name" value={name} readOnly className="col-span-3"/>
-                <Switch id="showName" checked={showName}
-                        className="col-span-1 data-[state=checked]:bg-primary"/>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="age" className="text-right font-medium">
-                  Age
-                </label>
-                <Input type="text" id="age" value={age} readOnly className="col-span-3"/>
-                <Switch id="showAge" checked={showAge}
-                        className="col-span-1 data-[state=checked]:bg-primary"/>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="address" className="text-right font-medium">
-                  Address
-                </label>
-                <Input type="text" id="address" value={address} readOnly className="col-span-3"/>
-                <Switch id="showAddress" checked={showAddress}
-                        className="col-span-1 data-[state=checked]:bg-primary"/>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="bloodType" className="text-right font-medium">
-                  Blood Type
-                </label>
-                <Input type="text" id="bloodType" value={bloodType} readOnly className="col-span-3"/>
-                <Switch id="showBloodType" checked={showBloodType}
-                        className="col-span-1 data-[state=checked]:bg-primary"/>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="medicalConditions" className="text-right font-medium">
-                  Medical Conditions
-                </label>
-                <Input type="text" id="medicalConditions" value={medicalConditions} readOnly
-                       className="col-span-3"/>
-                <Switch id="showMedicalConditions" checked={showMedicalConditions}
-                        className="col-span-1 data-[state=checked]:bg-primary"/>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="vehicleInformation" className="text-right font-medium">
-                  Vehicle Information
-                </label>
-                <Input type="text" id="vehicleInformation" value={vehicleInformation} readOnly
-                       className="col-span-3"/>
-                <Switch id="showVehicleInformation" checked={showVehicleInformation}
-                        className="col-span-1 data-[state=checked]:bg-primary"/>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      {/* Advertisement Placeholder */}
-      <div className="mt-auto mb-4">
-        {/* Replace with your advertisement content */}
-        <img src="/Advert logo.JPG" alt="Prosegur Alarms Advertisement" className="w-80 rounded-md"/>
+        {emergency && activeMonitoringState && <EmergencyDisplay/>}
+
+        {/* Video Placeholder */}
+        <div className="my-4 w-full aspect-video bg-muted rounded-md overflow-hidden">
+            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+             { !hasCameraPermission && isRecording && ( // Show only if recording was attempted but permission failed
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                    <Alert variant="destructive" className="w-auto">
+                        <AlertTitle>Camera Access Required</AlertTitle>
+                        <AlertDescription>
+                            Please allow camera access to use this feature. Recording may not work.
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            )}
+        </div>
+
+
+        <div className="flex flex-col items-center justify-center space-y-3">
+          <ActiveMonitoringButton
+            activeMonitoring={activeMonitoringState}
+            toggleActiveMonitoring={toggleActiveMonitoring}
+            className="w-64 h-36" // Reduced size by 10% from w-72 h-40
+          />
+          <div className="flex items-center justify-center space-x-2">
+            <PanicButton className="w-64 py-10 text-3xl" triggerEmergencySequence={triggerEmergencySequence}/>
+            {emergency && (
+              <Button
+                variant="destructive"
+                className="p-3" // Made smaller
+                onClick={handleStopPanic}
+                aria-label="Stop Panic"
+              >
+                <StopCircle className="h-8 w-8" />
+              </Button>
+            )}
+          </div>
+          <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Enter Emergency PIN</DialogTitle>
+                <DialogDescription>
+                  Please enter your emergency PIN code to stop the panic action.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="pin" className="text-right font-medium">
+                    PIN Code
+                  </label>
+                  <Input
+                    type="password"
+                    id="pin"
+                    value={pinInput}
+                    onChange={(e) => setPinInput(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              <Button onClick={validatePin}>Validate</Button>
+            </DialogContent>
+          </Dialog>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-64">Show Saved Info</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Saved User Information</DialogTitle>
+                <DialogDescription>
+                  This information is saved locally.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="name" className="text-right font-medium">
+                    Name
+                  </label>
+                  <Input type="text" id="name" value={name} readOnly className="col-span-3"/>
+                  <Switch id="showName" checked={showName} disabled
+                          className="col-span-1 data-[state=checked]:bg-primary"/>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="age" className="text-right font-medium">
+                    Age
+                  </label>
+                  <Input type="text" id="age" value={age} readOnly className="col-span-3"/>
+                  <Switch id="showAge" checked={showAge} disabled
+                          className="col-span-1 data-[state=checked]:bg-primary"/>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="address" className="text-right font-medium">
+                    Address
+                  </label>
+                  <Input type="text" id="address" value={address} readOnly className="col-span-3"/>
+                  <Switch id="showAddress" checked={showAddress} disabled
+                          className="col-span-1 data-[state=checked]:bg-primary"/>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="bloodType" className="text-right font-medium">
+                    Blood Type
+                  </label>
+                  <Input type="text" id="bloodType" value={bloodType} readOnly className="col-span-3"/>
+                  <Switch id="showBloodType" checked={showBloodType} disabled
+                          className="col-span-1 data-[state=checked]:bg-primary"/>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="medicalConditions" className="text-right font-medium">
+                    Medical Conditions
+                  </label>
+                  <Input type="text" id="medicalConditions" value={medicalConditions} readOnly
+                        className="col-span-3"/>
+                  <Switch id="showMedicalConditions" checked={showMedicalConditions} disabled
+                          className="col-span-1 data-[state=checked]:bg-primary"/>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="vehicleInformation" className="text-right font-medium">
+                    Vehicle Information
+                  </label>
+                  <Input type="text" id="vehicleInformation" value={vehicleInformation} readOnly
+                        className="col-span-3"/>
+                  <Switch id="showVehicleInformation" checked={showVehicleInformation} disabled
+                          className="col-span-1 data-[state=checked]:bg-primary"/>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Advertisement Placeholder */}
+        <div className="mt-auto mb-4 text-center pt-4">
+          <img src="/Advert logo.JPG" alt="Prosegur Alarms Advertisement" className="w-72 rounded-md inline-block"/>
+        </div>
+        <div className="absolute top-4 right-4">
+          <SettingsButton updateSoundEnabled={updateSoundEnabled}/>
+        </div>
       </div>
-      <div className="absolute top-4 right-4">
-        <SettingsButton updateSoundEnabled={updateSoundEnabled}/>
-      </div>
-      <video ref={videoRef} className="w-0 h-0" autoPlay muted
-             style={{position: "absolute", left: -1000, top: -1000}}/>
     </div>
   );
 }
 
-
-
+export default function Page() {
+  // Suspense boundary is good practice for components using useSearchParams
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomeComponent />
+    </Suspense>
+  );
+}
