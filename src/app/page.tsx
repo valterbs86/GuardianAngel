@@ -35,48 +35,61 @@ function HomeComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [isClient, setIsClient] = useState(false);
+
   // Safely access search parameters
-  const emergencyParam = searchParams.get('emergency');
+  const emergencyParam = isClient ? searchParams.get('emergency') : null;
 
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [activeMonitoringState, setActiveMonitoringState] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const storedValue = localStorage.getItem('activeMonitoring');
-      return storedValue === 'true';
-    }
-    return false;
-  });
-  const [emergency, setEmergency] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("emergency") === 'true';
-    }
-    return false;
-  });
+  const [activeMonitoringState, setActiveMonitoringState] = useState(false);
+  const [emergency, setEmergency] = useState<boolean>(false);
   const [emergencyIndicatorVisible, setEmergencyIndicatorVisible] = useState(false);
 
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedEmergency = localStorage.getItem("emergency");
-      if (storedEmergency) {
-        setEmergency(JSON.parse(storedEmergency));
-      }
+    setIsClient(true); // Component has mounted on the client
 
-      const storedSoundEnabled = localStorage.getItem("soundEnabled");
-      if (storedSoundEnabled) {
-        setSoundEnabled(JSON.parse(storedSoundEnabled));
-      }
-
-      // No need to set activeMonitoringState here again, it's done in useState initializer
+    const storedEmergency = localStorage.getItem("emergency");
+    if (storedEmergency) {
+      setEmergency(JSON.parse(storedEmergency));
     }
+
+    const storedSoundEnabled = localStorage.getItem("soundEnabled");
+    if (storedSoundEnabled) {
+      setSoundEnabled(JSON.parse(storedSoundEnabled));
+    }
+    
+    const storedActiveMonitoring = localStorage.getItem('activeMonitoring');
+    if (storedActiveMonitoring) {
+        setActiveMonitoringState(storedActiveMonitoring === 'true');
+    }
+    
+    // Load user info from localStorage
+    setName(localStorage.getItem("name") || "");
+    setAge(localStorage.getItem("age") || "");
+    setAddress(localStorage.getItem("address") || "");
+    setBloodType(localStorage.getItem("bloodType") || "");
+    setMedicalConditions(localStorage.getItem("medicalConditions") || "");
+    setVehicleInformation(localStorage.getItem("vehicleInformation") || "");
+    setShowName(localStorage.getItem("showName") === 'true');
+    setShowAge(localStorage.getItem("showAge") === 'true');
+    setShowAddress(localStorage.getItem("showAddress") === 'true');
+    setShowBloodType(localStorage.getItem("showBloodType") === 'true');
+    setShowMedicalConditions(localStorage.getItem("showMedicalConditions") === 'true');
+    setShowVehicleInformation(localStorage.getItem("showVehicleInformation") === 'true');
+
   }, []);
 
   useEffect(() => {
-    setEmergencyIndicatorVisible(emergency);
-  }, [emergency]);
+    if (isClient) {
+      setEmergencyIndicatorVisible(emergency);
+    }
+  }, [isClient, emergency]);
 
 
   useEffect(() => {
+    if (!isClient) return;
+
     if (emergency && soundEnabled) {
       const audio = new Audio("/ambulance.mp3"); // Replace with your sound file
       audio.loop = true;
@@ -86,7 +99,7 @@ function HomeComponent() {
         audio.pause();
       };
     }
-  }, [emergency, soundEnabled]);
+  }, [isClient, emergency, soundEnabled]);
 
 
   // Function to update soundEnabled state and store it in localStorage
@@ -102,9 +115,7 @@ function HomeComponent() {
     setActiveMonitoringState(newState);
     if (typeof window !== 'undefined') {
       localStorage.setItem('activeMonitoring', newState.toString());
-      if (newState && emergency) { // If monitoring is enabled during an emergency, show display
-        // This condition might need adjustment based on desired behavior for EmergencyDisplay
-      }
+      // Logic for EmergencyDisplay with activeMonitoringState and emergency is handled in JSX
     }
   };
 
@@ -122,23 +133,6 @@ function HomeComponent() {
   const [showBloodType, setShowBloodType] = useState(false);
   const [showMedicalConditions, setShowMedicalConditions] = useState(false);
   const [showVehicleInformation, setShowVehicleInformation] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setName(localStorage.getItem("name") || "");
-      setAge(localStorage.getItem("age") || "");
-      setAddress(localStorage.getItem("address") || "");
-      setBloodType(localStorage.getItem("bloodType") || "");
-      setMedicalConditions(localStorage.getItem("medicalConditions") || "");
-      setVehicleInformation(localStorage.getItem("vehicleInformation") || "");
-      setShowName(localStorage.getItem("showName") === 'true');
-      setShowAge(localStorage.getItem("showAge") === 'true');
-      setShowAddress(localStorage.getItem("showAddress") === 'true');
-      setShowBloodType(localStorage.getItem("showBloodType") === 'true');
-      setShowMedicalConditions(localStorage.getItem("showMedicalConditions") === 'true');
-      setShowVehicleInformation(localStorage.getItem("showVehicleInformation") === 'true');
-    }
-  }, []);
 
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -288,7 +282,7 @@ function HomeComponent() {
                         const reader = new FileReader();
                         reader.readAsDataURL(videoBlob);
                         reader.onloadend = function() {
-                            parsedData.videoUrl = reader.result; // Changed from videoDataUrl to videoUrl
+                            parsedData.videoUrl = reader.result; 
                             localStorage.setItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData));
                         }
                     }
@@ -322,11 +316,9 @@ function HomeComponent() {
     }
     setHasCameraPermission(false);
     setIsRecording(false);
-    // toast({ title: "Recording Stopped", description: "Video and audio recording has ended." }); // Toast moved to validatePin for better flow
   };
 
   const triggerEmergencySequence = async () => {
-    // Check and request camera permissions before starting the sequence
     if (!hasCameraPermission) {
       const stream = await getCameraPermission();
       if (!stream) {
@@ -334,13 +326,12 @@ function HomeComponent() {
         return;
       }
     }
-    // At this point, permissions should be granted and streamRef.current should be set
 
     setEmergency(true);
     if (typeof window !== 'undefined') {
       localStorage.setItem("emergency", 'true');
     }
-    setEmergencyIndicatorVisible(true);
+    // setEmergencyIndicatorVisible is handled by useEffect dependent on `emergency` and `isClient`
 
     const newPanicEventId = `panic-${Date.now()}`;
     setPanicEventId(newPanicEventId);
@@ -447,11 +438,8 @@ function HomeComponent() {
           parsedData.rearCameraPictureStop = rearPictureStop; 
           parsedData.finalGpsCoordinates = `${finalLocation.lat}, ${finalLocation.lng}`;
           parsedData.endTime = endTime.toLocaleTimeString();
-          // videoUrl is set in mediaRecorder.onstop when it finishes.
-          // To ensure it's there before pushing to history, we might need a small delay or handle it in onstop directly.
-          // For simplicity, assuming onstop has completed.
           localStorage.setItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData));
-          alertHistory.push(parsedData); // Add the completed event data
+          alertHistory.push(parsedData); 
         }
         localStorage.setItem("alertHistory", JSON.stringify(alertHistory));
       }
@@ -460,7 +448,7 @@ function HomeComponent() {
       if (typeof window !== 'undefined') {
         localStorage.setItem("emergency", 'false');
       }
-      setEmergencyIndicatorVisible(false);
+      // setEmergencyIndicatorVisible is handled by useEffect
       setPanicEventId(null);
     } else {
       toast({
@@ -471,6 +459,11 @@ function HomeComponent() {
       setPinInput('');
     }
   };
+
+  if (!isClient) {
+    // Render a loading state or null on the server and during initial client render
+    return <div>Loading...</div>; // Or return null; or a loading spinner
+  }
 
   return (
     <div className="flex flex-col h-screen w-screen items-center justify-start bg-background text-foreground p-4">
