@@ -28,7 +28,40 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 
 
-// import GuardianAngelLogo from "@/components/GuardianAngelLogo";
+// Helper function to safely set item in localStorage
+const safeSetLocalStorageItem = (key: string, value: string, itemName: string, toastFn: Function) => {
+  if (typeof window === 'undefined') return false;
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e: any) {
+    if (e.name === 'QuotaExceededError') {
+      toastFn({
+        variant: 'destructive',
+        title: 'Storage Full',
+        description: `Could not save ${itemName}. Local storage quota exceeded. Consider deleting old alerts from settings.`,
+      });
+    } else {
+      toastFn({
+        variant: 'destructive',
+        title: 'Storage Error',
+        description: `Failed to save ${itemName}: ${e.message}`,
+      });
+    }
+    return false;
+  }
+};
+
+// Helper function to safely remove item from localStorage
+const safeRemoveLocalStorageItem = (key: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(key);
+  } catch (e: any) {
+    console.error(`Failed to remove ${key} from localStorage:`, e);
+  }
+};
+
 
 function HomeComponent() {
   const {toast} = useToast();
@@ -51,38 +84,40 @@ function HomeComponent() {
   useEffect(() => {
     setIsClient(true); // Component has mounted on the client
 
-    const storedEmergency = localStorage.getItem("emergency");
-    if (storedEmergency) {
-      setEmergency(JSON.parse(storedEmergency));
-    } else {
-        setEmergency(false); // Default to false if not found
-    }
+    if (typeof window !== 'undefined') {
+        const storedEmergency = localStorage.getItem("emergency");
+        if (storedEmergency) {
+          setEmergency(JSON.parse(storedEmergency));
+        } else {
+            setEmergency(false); // Default to false if not found
+        }
 
-    const storedSoundEnabled = localStorage.getItem("soundEnabled");
-    if (storedSoundEnabled) {
-      setSoundEnabled(JSON.parse(storedSoundEnabled));
+        const storedSoundEnabled = localStorage.getItem("soundEnabled");
+        if (storedSoundEnabled) {
+          setSoundEnabled(JSON.parse(storedSoundEnabled));
+        }
+        
+        const storedActiveMonitoring = localStorage.getItem('activeMonitoring');
+        if (storedActiveMonitoring) {
+            setActiveMonitoringState(storedActiveMonitoring === 'true');
+        }  else {
+            setActiveMonitoringState(false); // Default if not found
+        }
+        
+        // Load user info from localStorage
+        setName(localStorage.getItem("name") || "");
+        setAge(localStorage.getItem("age") || "");
+        setAddress(localStorage.getItem("address") || "");
+        setBloodType(localStorage.getItem("bloodType") || "");
+        setMedicalConditions(localStorage.getItem("medicalConditions") || "");
+        setVehicleInformation(localStorage.getItem("vehicleInformation") || "");
+        setShowName(localStorage.getItem("showName") === 'true');
+        setShowAge(localStorage.getItem("showAge") === 'true');
+        setShowAddress(localStorage.getItem("showAddress") === 'true');
+        setShowBloodType(localStorage.getItem("showBloodType") === 'true');
+        setShowMedicalConditions(localStorage.getItem("showMedicalConditions") === 'true');
+        setShowVehicleInformation(localStorage.getItem("showVehicleInformation") === 'true');
     }
-    
-    const storedActiveMonitoring = localStorage.getItem('activeMonitoring');
-    if (storedActiveMonitoring) {
-        setActiveMonitoringState(storedActiveMonitoring === 'true');
-    }  else {
-        setActiveMonitoringState(false); // Default if not found
-    }
-    
-    // Load user info from localStorage
-    setName(localStorage.getItem("name") || "");
-    setAge(localStorage.getItem("age") || "");
-    setAddress(localStorage.getItem("address") || "");
-    setBloodType(localStorage.getItem("bloodType") || "");
-    setMedicalConditions(localStorage.getItem("medicalConditions") || "");
-    setVehicleInformation(localStorage.getItem("vehicleInformation") || "");
-    setShowName(localStorage.getItem("showName") === 'true');
-    setShowAge(localStorage.getItem("showAge") === 'true');
-    setShowAddress(localStorage.getItem("showAddress") === 'true');
-    setShowBloodType(localStorage.getItem("showBloodType") === 'true');
-    setShowMedicalConditions(localStorage.getItem("showMedicalConditions") === 'true');
-    setShowVehicleInformation(localStorage.getItem("showVehicleInformation") === 'true');
 
   }, []);
 
@@ -112,7 +147,7 @@ function HomeComponent() {
   const updateSoundEnabled = (enabled: boolean) => {
     setSoundEnabled(enabled);
     if (typeof window !== 'undefined') {
-      localStorage.setItem("soundEnabled", JSON.stringify(enabled));
+      safeSetLocalStorageItem("soundEnabled", JSON.stringify(enabled), "sound preference", toast);
     }
   };
 
@@ -120,8 +155,7 @@ function HomeComponent() {
     const newState = !activeMonitoringState;
     setActiveMonitoringState(newState);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('activeMonitoring', newState.toString());
-      // Logic for EmergencyDisplay with activeMonitoringState and emergency is handled in JSX
+      safeSetLocalStorageItem('activeMonitoring', newState.toString(), "active monitoring state", toast);
     }
   };
 
@@ -167,7 +201,6 @@ function HomeComponent() {
         return null;
       }
       try {
-        // Ensure any existing stream is stopped before requesting a new one
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
@@ -175,13 +208,13 @@ function HomeComponent() {
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode },
-          audio: true, // Request audio permission here as well for recording
+          audio: true, 
         });
         setHasCameraPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
-        streamRef.current = stream; // Store the stream
+        streamRef.current = stream; 
         return stream;
       } catch (error) {
         console.error('Error accessing camera:', error);
@@ -214,7 +247,6 @@ function HomeComponent() {
         return new Promise((resolve) => {
             const handleCanPlay = () => {
                 const canvas = document.createElement('canvas');
-                // Set canvas dimensions based on video track settings for more reliability
                 const videoTrack = streamToStop!.getVideoTracks()[0];
                 const settings = videoTrack.getSettings();
                 canvas.width = settings.width || tempVideoEl.videoWidth;
@@ -247,16 +279,14 @@ function HomeComponent() {
 
 
   const startRecording = async () => {
-    // Ensure fresh camera permission and stream for recording
     const userStream = await getCameraPermission('user');
     if (!userStream) {
         toast({ title: "Recording Error", description: "Failed to get camera stream for recording.", variant: "destructive" });
         setHasCameraPermission(false);
         return;
     }
-    // streamRef.current is now set by getCameraPermission
     if (videoRef.current && streamRef.current) {
-        videoRef.current.srcObject = streamRef.current; // Display the stream being recorded
+        videoRef.current.srcObject = streamRef.current; 
     }
 
     if (streamRef.current && streamRef.current.active) { 
@@ -290,14 +320,13 @@ function HomeComponent() {
                     reader.readAsDataURL(videoBlob);
                     reader.onloadend = function() {
                         if (reader.result) {
-                             localStorage.setItem(`panicEvent-${panicEventId}-videoData`, reader.result as string);
+                             safeSetLocalStorageItem(`panicEvent-${panicEventId}-videoData`, reader.result as string, 'video recording', toast);
                         } else {
-                            localStorage.removeItem(`panicEvent-${panicEventId}-videoData`);
+                            safeRemoveLocalStorageItem(`panicEvent-${panicEventId}-videoData`);
                         }
                     }
                 }
                 setIsRecording(false);
-                // The camera stream (streamRef.current) is stopped in stopRecordingAndReleaseCamera
             };
             mediaRecorderRef.current.start();
             setIsRecording(true);
@@ -324,26 +353,23 @@ function HomeComponent() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    setHasCameraPermission(false); // Reflect that camera is no longer actively managed by a general permission state
+    setHasCameraPermission(false); 
     setIsRecording(false);
   };
 
   const triggerEmergencySequence = async () => {
-    // Request camera permission first for the front camera to ensure it's available
     const stream = await getCameraPermission('user');
     if (!stream) {
       toast({ title: "Emergency Error", description: "Cannot start emergency sequence without camera permission.", variant: "destructive" });
       return;
     }
-    // Ensure the preview shows the user stream if it's not already
     if (videoRef.current && videoRef.current.srcObject !== streamRef.current) {
         videoRef.current.srcObject = streamRef.current;
     }
 
-
     setEmergency(true);
     if (typeof window !== 'undefined') {
-      localStorage.setItem("emergency", 'true');
+      safeSetLocalStorageItem("emergency", 'true', "emergency state", toast);
     }
 
     const newPanicEventId = `panic-${Date.now()}`;
@@ -355,16 +381,15 @@ function HomeComponent() {
     });
 
     const frontPicture = await capturePicture('user');
-    const rearPicture = await capturePicture('environment'); // This will request 'environment' camera
+    const rearPicture = await capturePicture('environment'); 
     
-    // After capturing pictures, re-acquire user stream for recording if necessary, or ensure it's still active
     if (!streamRef.current || !streamRef.current.active) {
         const userStreamForRecording = await getCameraPermission('user');
         if (!userStreamForRecording) {
              toast({ title: "Recording Error", description: "Failed to re-acquire camera for recording.", variant: "destructive" });
-             return; // Stop if camera cannot be re-acquired
+             return; 
         }
-        if (videoRef.current) videoRef.current.srcObject = streamRef.current; // Update preview if stream changed
+        if (videoRef.current) videoRef.current.srcObject = streamRef.current; 
     }
     await startRecording(); 
 
@@ -380,10 +405,21 @@ function HomeComponent() {
     };
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`panicEvent-${newPanicEventId}`, JSON.stringify(initialEventData));
-      if (frontPicture) localStorage.setItem(`panicEvent-${newPanicEventId}-frontPicStart`, frontPicture); else localStorage.removeItem(`panicEvent-${newPanicEventId}-frontPicStart`);
-      if (rearPicture) localStorage.setItem(`panicEvent-${newPanicEventId}-rearPicStart`, rearPicture); else localStorage.removeItem(`panicEvent-${newPanicEventId}-rearPicStart`);
+      const eventDataSaved = safeSetLocalStorageItem(`panicEvent-${newPanicEventId}`, JSON.stringify(initialEventData), 'emergency event data', toast);
+      if (eventDataSaved) {
+        if (frontPicture) {
+          safeSetLocalStorageItem(`panicEvent-${newPanicEventId}-frontPicStart`, frontPicture, 'front picture (start)', toast);
+        } else {
+          safeRemoveLocalStorageItem(`panicEvent-${newPanicEventId}-frontPicStart`);
+        }
+        if (rearPicture) {
+          safeSetLocalStorageItem(`panicEvent-${newPanicEventId}-rearPicStart`, rearPicture, 'rear picture (start)', toast);
+        } else {
+          safeRemoveLocalStorageItem(`panicEvent-${newPanicEventId}-rearPicStart`);
+        }
+      }
     }
+
 
     if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
     locationIntervalRef.current = setInterval(async () => {
@@ -394,6 +430,8 @@ function HomeComponent() {
         if (existingEventData) {
           const parsedData = JSON.parse(existingEventData);
           parsedData.locationHistory.push({ lat: currentLocation.lat, lng: currentLocation.lng, timestamp: currentTime.toISOString() });
+          // No need for safeSetLocalStorageItem here if the main data is already there and subsequent items might fill quota.
+          // However, if this update itself could be large, it should also be wrapped. For now, assuming it's smaller.
           localStorage.setItem(`panicEvent-${newPanicEventId}`, JSON.stringify(parsedData));
         }
       }
@@ -428,8 +466,7 @@ function HomeComponent() {
       });
 
       if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
-
-      // Stop recording and release camera first to ensure these resources are free for picture taking
+      
       stopRecordingAndReleaseCamera(); 
       
       const frontPictureStop = await capturePicture('user');
@@ -456,29 +493,36 @@ function HomeComponent() {
           const parsedData = JSON.parse(existingEventData);
           parsedData.finalGpsCoordinates = `${finalLocation.lat}, ${finalLocation.lng}`;
           parsedData.endTime = endTime.toLocaleTimeString();
-          localStorage.setItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData));
+          safeSetLocalStorageItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData), "final event data", toast);
 
-          // Store stop pictures separately
-          if (frontPictureStop) localStorage.setItem(`panicEvent-${panicEventId}-frontPicStop`, frontPictureStop); else localStorage.removeItem(`panicEvent-${panicEventId}-frontPicStop`);
-          if (rearPictureStop) localStorage.setItem(`panicEvent-${panicEventId}-rearPicStop`, rearPictureStop); else localStorage.removeItem(`panicEvent-${panicEventId}-rearPicStop`);
+
+          if (frontPictureStop) {
+            safeSetLocalStorageItem(`panicEvent-${panicEventId}-frontPicStop`, frontPictureStop, 'front picture (stop)', toast);
+          } else {
+            safeRemoveLocalStorageItem(`panicEvent-${panicEventId}-frontPicStop`);
+          }
+          if (rearPictureStop) {
+            safeSetLocalStorageItem(`panicEvent-${panicEventId}-rearPicStop`, rearPictureStop, 'rear picture (stop)', toast);
+          } else {
+            safeRemoveLocalStorageItem(`panicEvent-${panicEventId}-rearPicStop`);
+          }
           
-          // For alertHistory, gather all parts
           const completeAlertDataForHistory = {
-              ...parsedData, // Contains id, date, time, gpsCoords, locationHistory, finalGps, endTime
+              ...parsedData, 
               frontCameraPicture: localStorage.getItem(`panicEvent-${panicEventId}-frontPicStart`),
               rearCameraPicture: localStorage.getItem(`panicEvent-${panicEventId}-rearPicStart`),
-              frontCameraPictureStop: frontPictureStop, // from current scope
-              rearCameraPictureStop: rearPictureStop,   // from current scope
+              frontCameraPictureStop: frontPictureStop, 
+              rearCameraPictureStop: rearPictureStop,   
               videoUrl: localStorage.getItem(`panicEvent-${panicEventId}-videoData`),
           };
           alertHistory.push(completeAlertDataForHistory); 
         }
-        localStorage.setItem("alertHistory", JSON.stringify(alertHistory));
+        safeSetLocalStorageItem("alertHistory", JSON.stringify(alertHistory), 'alert history', toast);
       }
 
       setEmergency(false);
       if (typeof window !== 'undefined') {
-        localStorage.setItem("emergency", 'false');
+        safeSetLocalStorageItem("emergency", 'false', "emergency state", toast);
       }
       setPanicEventId(null);
     } else {
@@ -522,7 +566,7 @@ function HomeComponent() {
 
         <div className="my-4 w-full aspect-video bg-muted rounded-md overflow-hidden relative shadow-lg">
             <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-            { isRecording && !hasCameraPermission && ( // Show if recording but no permission (should be rare with new flow)
+            { isRecording && !hasCameraPermission && ( 
                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
                     <Alert variant="destructive" className="w-auto m-4">
                         <AlertTitle>Camera Issue During Recording</AlertTitle>
@@ -532,7 +576,7 @@ function HomeComponent() {
                     </Alert>
                 </div>
             )}
-             { !streamRef.current && !isRecording && ( // Show if no stream and not recording (initial state)
+             { !streamRef.current && !isRecording && ( 
                 <div className="absolute inset-0 flex items-center justify-center bg-muted">
                     <p className="text-foreground/70 text-center p-4">Camera preview will appear here when needed or during recording.</p>
                 </div>
