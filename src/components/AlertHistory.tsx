@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -249,7 +248,12 @@ export function AlertHistory() {
       </div>
 
       {selectedAlert && (
-        <Dialog open={!!selectedAlert} onOpenChange={() => {setSelectedAlert(null); setIsMapModalOpen(false);}}>
+        <Dialog open={!!selectedAlert} onOpenChange={(isOpen) => {
+            if (!isOpen) {
+                setSelectedAlert(null);
+                setIsMapModalOpen(false); // Ensure map modal is also closed
+            }
+        }}>
           <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Alert Details - ID: {selectedAlert.id}</DialogTitle>
@@ -311,14 +315,14 @@ export function AlertHistory() {
 
       {isMapModalOpen && selectedAlert && selectedAlert.locationHistory && selectedAlert.locationHistory.length > 0 && defaultIcon && (
          <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
-            <DialogContent key={`dialog-content-remount-${mapForceRemountKey}`} className="sm:max-w-3xl h-[80vh] flex flex-col">
+            <DialogContent className="sm:max-w-3xl h-[80vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Route Map - Event ID: {selectedAlert.id}</DialogTitle>
                 </DialogHeader>
                 <div className="flex-grow mt-4">
                     { selectedAlert.locationHistory[0] ? (
                         <MapContainer
-                            key={`map-remount-${mapForceRemountKey}`} 
+                            key={mapForceRemountKey} // Apply remount key here
                             center={[selectedAlert.locationHistory[0].lat, selectedAlert.locationHistory[0].lng] as LatLngExpression}
                             zoom={13}
                             style={{ height: "100%", width: "100%" }}
