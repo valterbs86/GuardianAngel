@@ -27,11 +27,11 @@ interface AlertEvent {
   id: string;
   date: string;
   time: string;
-  frontCameraPicture?: string;
-  rearCameraPicture?: string;
-  frontCameraPictureStop?: string;
-  rearCameraPictureStop?: string;
-  videoUrl?: string;
+  frontCameraPicture?: string | null;
+  rearCameraPicture?: string | null;
+  frontCameraPictureStop?: string | null;
+  rearCameraPictureStop?: string | null;
+  videoUrl?: string | null;
   gpsCoordinates?: string;
   locationHistory?: { lat: number; lng: number; timestamp: string }[];
   finalGpsCoordinates?: string;
@@ -48,7 +48,6 @@ export function AlertHistory() {
 
   useEffect(() => {
     setIsClient(true);
-    // Dynamically import leaflet CSS
     if (typeof window !== 'undefined') {
       import('leaflet/dist/leaflet.css').catch(err => console.error("Failed to load leaflet CSS", err));
     }
@@ -56,7 +55,7 @@ export function AlertHistory() {
 
 
   useEffect(() => {
-    if (isClient) { // Only load alerts on the client side
+    if (isClient) { 
         loadAlerts();
     }
   }, [isClient]);
@@ -67,7 +66,6 @@ export function AlertHistory() {
     if (storedAlerts) {
       try {
         let parsedAlerts: AlertEvent[] = JSON.parse(storedAlerts);
-        // Filter out alerts with missing or invalid IDs and ensure locationHistory is an array
         parsedAlerts = parsedAlerts.filter(
           alert => alert && typeof alert.id === 'string' && alert.id.trim() !== ''
         ).map(alert => ({
@@ -97,11 +95,17 @@ export function AlertHistory() {
 
   const deleteAllAlerts = () => {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem("alertHistory");
-    // Remove individual alert data
+    
     alerts.forEach(alert => {
         localStorage.removeItem(`panicEvent-${alert.id}`);
+        localStorage.removeItem(`panicEvent-${alert.id}-frontPicStart`);
+        localStorage.removeItem(`panicEvent-${alert.id}-rearPicStart`);
+        localStorage.removeItem(`panicEvent-${alert.id}-frontPicStop`);
+        localStorage.removeItem(`panicEvent-${alert.id}-rearPicStop`);
+        localStorage.removeItem(`panicEvent-${alert.id}-videoData`);
     });
+
+    localStorage.removeItem("alertHistory");
     setAlerts([]);
     setSelectedAlert(null);
     toast({
@@ -114,7 +118,14 @@ export function AlertHistory() {
     if (typeof window === 'undefined') return;
     const updatedAlerts = alerts.filter((alert) => alert.id !== alertIdToDelete);
     localStorage.setItem("alertHistory", JSON.stringify(updatedAlerts));
+
     localStorage.removeItem(`panicEvent-${alertIdToDelete}`);
+    localStorage.removeItem(`panicEvent-${alertIdToDelete}-frontPicStart`);
+    localStorage.removeItem(`panicEvent-${alertIdToDelete}-rearPicStart`);
+    localStorage.removeItem(`panicEvent-${alertIdToDelete}-frontPicStop`);
+    localStorage.removeItem(`panicEvent-${alertIdToDelete}-rearPicStop`);
+    localStorage.removeItem(`panicEvent-${alertIdToDelete}-videoData`);
+
     setAlerts(updatedAlerts);
     if (selectedAlert?.id === alertIdToDelete) {
       setSelectedAlert(null);
@@ -128,27 +139,34 @@ export function AlertHistory() {
   const handleAlertClick = (alert: AlertEvent) => {
     if (typeof window === 'undefined') return;
     const eventData = localStorage.getItem(`panicEvent-${alert.id}`);
+    let enrichedAlert: AlertEvent = { ...alert, locationHistory: Array.isArray(alert.locationHistory) ? alert.locationHistory : [] };
+
     if (eventData) {
       try {
         const parsedEventData = JSON.parse(eventData);
-        const enrichedAlert: AlertEvent = {
-          ...alert, 
+        enrichedAlert = {
+          ...enrichedAlert, 
           ...parsedEventData,
           locationHistory: Array.isArray(parsedEventData.locationHistory) ? parsedEventData.locationHistory : [],
         };
-        setSelectedAlert(enrichedAlert);
       } catch(error) {
          console.error("Failed to parse event data:", error);
-         setSelectedAlert({...alert, locationHistory: Array.isArray(alert.locationHistory) ? alert.locationHistory : []}); 
          toast({
             variant: "destructive",
             title: "Error loading alert details",
             description: "Could not parse detailed event data.",
          });
       }
-    } else {
-      setSelectedAlert({...alert, locationHistory: Array.isArray(alert.locationHistory) ? alert.locationHistory : []});
     }
+    
+    // Load images and video from their separate localStorage items
+    enrichedAlert.frontCameraPicture = localStorage.getItem(`panicEvent-${alert.id}-frontPicStart`) || undefined;
+    enrichedAlert.rearCameraPicture = localStorage.getItem(`panicEvent-${alert.id}-rearPicStart`) || undefined;
+    enrichedAlert.frontCameraPictureStop = localStorage.getItem(`panicEvent-${alert.id}-frontPicStop`) || undefined;
+    enrichedAlert.rearCameraPictureStop = localStorage.getItem(`panicEvent-${alert.id}-rearPicStop`) || undefined;
+    enrichedAlert.videoUrl = localStorage.getItem(`panicEvent-${alert.id}-videoData`) || undefined;
+
+    setSelectedAlert(enrichedAlert);
   };
 
   const defaultIcon = useMemo(() => {

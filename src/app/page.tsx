@@ -38,10 +38,12 @@ function HomeComponent() {
   const [isClient, setIsClient] = useState(false);
 
   // Safely access search parameters
-  const emergencyParam = isClient ? searchParams.get('emergency') : null;
+   const emergencyParam = isClient ? searchParams.get('emergency') : null;
+
 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [activeMonitoringState, setActiveMonitoringState] = useState(false);
+
   const [emergency, setEmergency] = useState<boolean>(false);
   const [emergencyIndicatorVisible, setEmergencyIndicatorVisible] = useState(false);
 
@@ -52,6 +54,8 @@ function HomeComponent() {
     const storedEmergency = localStorage.getItem("emergency");
     if (storedEmergency) {
       setEmergency(JSON.parse(storedEmergency));
+    } else {
+        setEmergency(false); // Default to false if not found
     }
 
     const storedSoundEnabled = localStorage.getItem("soundEnabled");
@@ -62,6 +66,8 @@ function HomeComponent() {
     const storedActiveMonitoring = localStorage.getItem('activeMonitoring');
     if (storedActiveMonitoring) {
         setActiveMonitoringState(storedActiveMonitoring === 'true');
+    }  else {
+        setActiveMonitoringState(false); // Default if not found
     }
     
     // Load user info from localStorage
@@ -161,9 +167,15 @@ function HomeComponent() {
         return null;
       }
       try {
+        // Ensure any existing stream is stopped before requesting a new one
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode },
-          audio: true,
+          audio: true, // Request audio permission here as well for recording
         });
         setHasCameraPermission(true);
         if (videoRef.current) {
@@ -187,7 +199,6 @@ function HomeComponent() {
   const capturePicture = async (facingMode: 'user' | 'environment'): Promise<string | null> => {
     let streamToStop: MediaStream | null = null;
     try {
-        // Request a new stream specifically for capturing the picture
         const currentStreamForCapture = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
         if (!currentStreamForCapture) {
             toast({ title: "Camera Error", description: "Failed to get camera stream for picture.", variant: "destructive" });
@@ -195,19 +206,20 @@ function HomeComponent() {
         }
         streamToStop = currentStreamForCapture;
 
-
         const tempVideoEl = document.createElement('video');
         tempVideoEl.srcObject = streamToStop;
         
-        // Wait for the video to be ready to play to ensure dimensions are set
-        await new Promise(resolve => tempVideoEl.onloadedmetadata = resolve);
-        await tempVideoEl.play(); 
+        await new Promise(resolve => { tempVideoEl.onloadedmetadata = resolve; tempVideoEl.play().catch(console.error); });
 
         return new Promise((resolve) => {
             const handleCanPlay = () => {
                 const canvas = document.createElement('canvas');
-                canvas.width = tempVideoEl.videoWidth;
-                canvas.height = tempVideoEl.videoHeight;
+                // Set canvas dimensions based on video track settings for more reliability
+                const videoTrack = streamToStop!.getVideoTracks()[0];
+                const settings = videoTrack.getSettings();
+                canvas.width = settings.width || tempVideoEl.videoWidth;
+                canvas.height = settings.height || tempVideoEl.videoHeight;
+
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                     ctx.drawImage(tempVideoEl, 0, 0, canvas.width, canvas.height);
@@ -216,11 +228,11 @@ function HomeComponent() {
                     resolve(null);
                 }
                 tempVideoEl.removeEventListener('canplay', handleCanPlay);
-                streamToStop?.getTracks().forEach(track => track.stop()); 
+                 streamToStop?.getTracks().forEach(track => track.stop()); 
             };
             
             if (tempVideoEl.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
-                 handleCanPlay(); // If already ready, call directly
+                 handleCanPlay(); 
             } else {
                 tempVideoEl.addEventListener('canplay', handleCanPlay, { once: true });
             }
@@ -235,19 +247,17 @@ function HomeComponent() {
 
 
   const startRecording = async () => {
-    if (!streamRef.current || !streamRef.current.active) {
-        const stream = await getCameraPermission('user'); 
-        if (!stream) {
-            toast({ title: "Recording Error", description: "Failed to get camera stream for recording.", variant: "destructive" });
-            setHasCameraPermission(false); 
-            return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) { 
-            videoRef.current.srcObject = streamRef.current;
-        }
+    // Ensure fresh camera permission and stream for recording
+    const userStream = await getCameraPermission('user');
+    if (!userStream) {
+        toast({ title: "Recording Error", description: "Failed to get camera stream for recording.", variant: "destructive" });
+        setHasCameraPermission(false);
+        return;
     }
-
+    // streamRef.current is now set by getCameraPermission
+    if (videoRef.current && streamRef.current) {
+        videoRef.current.srcObject = streamRef.current; // Display the stream being recorded
+    }
 
     if (streamRef.current && streamRef.current.active) { 
         try {
@@ -276,18 +286,18 @@ function HomeComponent() {
                 const videoBlob = new Blob(recordedChunksRef.current, { type: mimeType });
                 
                 if (typeof window !== 'undefined' && panicEventId) {
-                    const existingEventData = localStorage.getItem(`panicEvent-${panicEventId}`);
-                    if (existingEventData) {
-                        const parsedData = JSON.parse(existingEventData);
-                        const reader = new FileReader();
-                        reader.readAsDataURL(videoBlob);
-                        reader.onloadend = function() {
-                            parsedData.videoUrl = reader.result; 
-                            localStorage.setItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData));
+                    const reader = new FileReader();
+                    reader.readAsDataURL(videoBlob);
+                    reader.onloadend = function() {
+                        if (reader.result) {
+                             localStorage.setItem(`panicEvent-${panicEventId}-videoData`, reader.result as string);
+                        } else {
+                            localStorage.removeItem(`panicEvent-${panicEventId}-videoData`);
                         }
                     }
                 }
                 setIsRecording(false);
+                // The camera stream (streamRef.current) is stopped in stopRecordingAndReleaseCamera
             };
             mediaRecorderRef.current.start();
             setIsRecording(true);
@@ -298,7 +308,7 @@ function HomeComponent() {
             setIsRecording(false);
         }
     } else {
-         toast({ title: "Recording Error", description: "Camera stream is not active.", variant: "destructive" });
+         toast({ title: "Recording Error", description: "Camera stream is not active or available for recording.", variant: "destructive" });
          setHasCameraPermission(false);
     }
   };
@@ -314,24 +324,27 @@ function HomeComponent() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    setHasCameraPermission(false);
+    setHasCameraPermission(false); // Reflect that camera is no longer actively managed by a general permission state
     setIsRecording(false);
   };
 
   const triggerEmergencySequence = async () => {
-    if (!hasCameraPermission) {
-      const stream = await getCameraPermission();
-      if (!stream) {
-        toast({ title: "Emergency Error", description: "Cannot start emergency sequence without camera permission.", variant: "destructive" });
-        return;
-      }
+    // Request camera permission first for the front camera to ensure it's available
+    const stream = await getCameraPermission('user');
+    if (!stream) {
+      toast({ title: "Emergency Error", description: "Cannot start emergency sequence without camera permission.", variant: "destructive" });
+      return;
     }
+    // Ensure the preview shows the user stream if it's not already
+    if (videoRef.current && videoRef.current.srcObject !== streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+    }
+
 
     setEmergency(true);
     if (typeof window !== 'undefined') {
       localStorage.setItem("emergency", 'true');
     }
-    // setEmergencyIndicatorVisible is handled by useEffect dependent on `emergency` and `isClient`
 
     const newPanicEventId = `panic-${Date.now()}`;
     setPanicEventId(newPanicEventId);
@@ -342,10 +355,16 @@ function HomeComponent() {
     });
 
     const frontPicture = await capturePicture('user');
-    const rearPicture = await capturePicture('environment');
+    const rearPicture = await capturePicture('environment'); // This will request 'environment' camera
     
-    if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
-        videoRef.current.srcObject = streamRef.current;
+    // After capturing pictures, re-acquire user stream for recording if necessary, or ensure it's still active
+    if (!streamRef.current || !streamRef.current.active) {
+        const userStreamForRecording = await getCameraPermission('user');
+        if (!userStreamForRecording) {
+             toast({ title: "Recording Error", description: "Failed to re-acquire camera for recording.", variant: "destructive" });
+             return; // Stop if camera cannot be re-acquired
+        }
+        if (videoRef.current) videoRef.current.srcObject = streamRef.current; // Update preview if stream changed
     }
     await startRecording(); 
 
@@ -356,15 +375,14 @@ function HomeComponent() {
       id: newPanicEventId,
       date: startTime.toLocaleDateString(),
       time: startTime.toLocaleTimeString(),
-      frontCameraPicture: frontPicture,
-      rearCameraPicture: rearPicture,
       gpsCoordinates: `${location.lat}, ${location.lng}`,
       locationHistory: [{ lat: location.lat, lng: location.lng, timestamp: startTime.toISOString() }],
-      videoUrl: null, 
     };
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(`panicEvent-${newPanicEventId}`, JSON.stringify(initialEventData));
+      if (frontPicture) localStorage.setItem(`panicEvent-${newPanicEventId}-frontPicStart`, frontPicture); else localStorage.removeItem(`panicEvent-${newPanicEventId}-frontPicStart`);
+      if (rearPicture) localStorage.setItem(`panicEvent-${newPanicEventId}-rearPicStart`, rearPicture); else localStorage.removeItem(`panicEvent-${newPanicEventId}-rearPicStart`);
     }
 
     if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
@@ -411,9 +429,11 @@ function HomeComponent() {
 
       if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
 
+      // Stop recording and release camera first to ensure these resources are free for picture taking
+      stopRecordingAndReleaseCamera(); 
+      
       const frontPictureStop = await capturePicture('user');
       const rearPictureStop = await capturePicture('environment');
-      stopRecordingAndReleaseCamera(); 
       
       const finalLocation = await getCurrentLocation();
       const endTime = new Date();
@@ -434,12 +454,24 @@ function HomeComponent() {
 
         if (existingEventData) {
           const parsedData = JSON.parse(existingEventData);
-          parsedData.frontCameraPictureStop = frontPictureStop;
-          parsedData.rearCameraPictureStop = rearPictureStop; 
           parsedData.finalGpsCoordinates = `${finalLocation.lat}, ${finalLocation.lng}`;
           parsedData.endTime = endTime.toLocaleTimeString();
           localStorage.setItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData));
-          alertHistory.push(parsedData); 
+
+          // Store stop pictures separately
+          if (frontPictureStop) localStorage.setItem(`panicEvent-${panicEventId}-frontPicStop`, frontPictureStop); else localStorage.removeItem(`panicEvent-${panicEventId}-frontPicStop`);
+          if (rearPictureStop) localStorage.setItem(`panicEvent-${panicEventId}-rearPicStop`, rearPictureStop); else localStorage.removeItem(`panicEvent-${panicEventId}-rearPicStop`);
+          
+          // For alertHistory, gather all parts
+          const completeAlertDataForHistory = {
+              ...parsedData, // Contains id, date, time, gpsCoords, locationHistory, finalGps, endTime
+              frontCameraPicture: localStorage.getItem(`panicEvent-${panicEventId}-frontPicStart`),
+              rearCameraPicture: localStorage.getItem(`panicEvent-${panicEventId}-rearPicStart`),
+              frontCameraPictureStop: frontPictureStop, // from current scope
+              rearCameraPictureStop: rearPictureStop,   // from current scope
+              videoUrl: localStorage.getItem(`panicEvent-${panicEventId}-videoData`),
+          };
+          alertHistory.push(completeAlertDataForHistory); 
         }
         localStorage.setItem("alertHistory", JSON.stringify(alertHistory));
       }
@@ -448,7 +480,6 @@ function HomeComponent() {
       if (typeof window !== 'undefined') {
         localStorage.setItem("emergency", 'false');
       }
-      // setEmergencyIndicatorVisible is handled by useEffect
       setPanicEventId(null);
     } else {
       toast({
@@ -461,19 +492,18 @@ function HomeComponent() {
   };
 
   if (!isClient) {
-    // Render a loading state or null on the server and during initial client render
-    return <div>Loading...</div>; // Or return null; or a loading spinner
+    return <div className="flex flex-col h-screen w-screen items-center justify-center bg-background text-foreground p-4">Loading...</div>;
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen items-center justify-start bg-background text-foreground p-4">
+    <div className="flex flex-col h-screen w-screen items-center justify-start bg-background text-foreground p-4 overflow-y-auto">
       <Toaster/>
 
       <div className="w-full max-w-md mx-auto">
         <div className="mt-8 mb-4 relative text-center">
           {emergencyIndicatorVisible && (
             <div
-              className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-red-500 rounded-full"
+              className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-red-500 rounded-full animate-pulse"
               aria-hidden="true"
             />
           )}
@@ -490,21 +520,21 @@ function HomeComponent() {
             <EmergencyDisplay />
         )}
 
-        <div className="my-4 w-full aspect-video bg-muted rounded-md overflow-hidden relative">
+        <div className="my-4 w-full aspect-video bg-muted rounded-md overflow-hidden relative shadow-lg">
             <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-            { !hasCameraPermission && isRecording && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                    <Alert variant="destructive" className="w-auto">
-                        <AlertTitle>Camera Access Required</AlertTitle>
+            { isRecording && !hasCameraPermission && ( // Show if recording but no permission (should be rare with new flow)
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+                    <Alert variant="destructive" className="w-auto m-4">
+                        <AlertTitle>Camera Issue During Recording</AlertTitle>
                         <AlertDescription>
-                            Please allow camera access to use this feature. Recording may not work.
+                            Camera access might have been revoked or lost. Recording may be affected.
                         </AlertDescription>
                     </Alert>
                 </div>
             )}
-             { !hasCameraPermission && !isRecording && streamRef.current === null && ( 
+             { !streamRef.current && !isRecording && ( // Show if no stream and not recording (initial state)
                 <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                    <p className="text-foreground">Camera preview will appear here</p>
+                    <p className="text-foreground/70 text-center p-4">Camera preview will appear here when needed or during recording.</p>
                 </div>
             )}
         </div>
@@ -521,7 +551,7 @@ function HomeComponent() {
             {emergency && (
               <Button
                 variant="destructive"
-                className="p-3" 
+                className="p-3 h-auto aspect-square flex items-center justify-center shadow-lg" 
                 onClick={handleStopPanic}
                 aria-label="Stop Panic"
               >
@@ -622,7 +652,7 @@ function HomeComponent() {
         </div>
 
         <div className="mt-auto mb-4 text-center pt-4">
-          <img src="/Advert logo.JPG" alt="Prosegur Alarms Advertisement" className="w-72 rounded-md inline-block" data-ai-hint="advertisement banner"/>
+          <img src="/Advert logo.JPG" alt="Prosegur Alarms Advertisement" className="w-72 rounded-md inline-block shadow-md" data-ai-hint="advertisement banner"/>
         </div>
         <div className="absolute top-4 right-4">
           <SettingsButton updateSoundEnabled={updateSoundEnabled}/>
@@ -634,7 +664,7 @@ function HomeComponent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="flex flex-col h-screen w-screen items-center justify-center bg-background text-foreground p-4">Loading...</div>}>
       <HomeComponent />
     </Suspense>
   );
