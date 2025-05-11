@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -10,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { LatLngExpression } from 'leaflet'; // Import LatLngExpression type
+import type { LatLngExpression } from 'leaflet'; 
 import dynamic from 'next/dynamic';
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,7 +33,7 @@ interface AlertEvent {
   rearCameraPictureStop?: string;
   videoUrl?: string;
   gpsCoordinates?: string;
-  locationHistory?: { lat: number; lng: number }[];
+  locationHistory?: { lat: number; lng: number; timestamp: string }[];
   finalGpsCoordinates?: string;
   endTime?: string;
 }
@@ -55,16 +56,25 @@ export function AlertHistory() {
 
 
   useEffect(() => {
-    loadAlerts();
-  }, []);
+    if (isClient) { // Only load alerts on the client side
+        loadAlerts();
+    }
+  }, [isClient]);
 
   const loadAlerts = () => {
     if (typeof window === 'undefined') return;
     const storedAlerts = localStorage.getItem("alertHistory");
     if (storedAlerts) {
       try {
-        const parsedAlerts: AlertEvent[] = JSON.parse(storedAlerts);
-        // Sort alerts by date and time in descending order (most recent first)
+        let parsedAlerts: AlertEvent[] = JSON.parse(storedAlerts);
+        // Filter out alerts with missing or invalid IDs and ensure locationHistory is an array
+        parsedAlerts = parsedAlerts.filter(
+          alert => alert && typeof alert.id === 'string' && alert.id.trim() !== ''
+        ).map(alert => ({
+          ...alert,
+          locationHistory: Array.isArray(alert.locationHistory) ? alert.locationHistory : []
+        }));
+        
         const sortedAlerts = parsedAlerts.sort((a, b) => {
           const dateTimeA = new Date(`${a.date} ${a.time}`);
           const dateTimeB = new Date(`${b.date} ${b.time}`);
@@ -88,10 +98,9 @@ export function AlertHistory() {
   const deleteAllAlerts = () => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem("alertHistory");
-    // Remove individual alert data and associated location history
+    // Remove individual alert data
     alerts.forEach(alert => {
         localStorage.removeItem(`panicEvent-${alert.id}`);
-        localStorage.removeItem(`locationHistory-${alert.id}`);
     });
     setAlerts([]);
     setSelectedAlert(null);
@@ -106,7 +115,6 @@ export function AlertHistory() {
     const updatedAlerts = alerts.filter((alert) => alert.id !== alertIdToDelete);
     localStorage.setItem("alertHistory", JSON.stringify(updatedAlerts));
     localStorage.removeItem(`panicEvent-${alertIdToDelete}`);
-    localStorage.removeItem(`locationHistory-${alertIdToDelete}`); // Remove associated location history
     setAlerts(updatedAlerts);
     if (selectedAlert?.id === alertIdToDelete) {
       setSelectedAlert(null);
@@ -120,19 +128,18 @@ export function AlertHistory() {
   const handleAlertClick = (alert: AlertEvent) => {
     if (typeof window === 'undefined') return;
     const eventData = localStorage.getItem(`panicEvent-${alert.id}`);
-    const locationData = localStorage.getItem(`locationHistory-${alert.id}`);
     if (eventData) {
       try {
         const parsedEventData = JSON.parse(eventData);
         const enrichedAlert: AlertEvent = {
-          ...alert,
+          ...alert, 
           ...parsedEventData,
-          locationHistory: locationData ? JSON.parse(locationData) : [],
+          locationHistory: Array.isArray(parsedEventData.locationHistory) ? parsedEventData.locationHistory : [],
         };
         setSelectedAlert(enrichedAlert);
       } catch(error) {
          console.error("Failed to parse event data:", error);
-         setSelectedAlert(alert); // Fallback to basic alert info
+         setSelectedAlert({...alert, locationHistory: Array.isArray(alert.locationHistory) ? alert.locationHistory : []}); 
          toast({
             variant: "destructive",
             title: "Error loading alert details",
@@ -140,12 +147,12 @@ export function AlertHistory() {
          });
       }
     } else {
-      setSelectedAlert(alert); // Fallback to basic alert info
+      setSelectedAlert({...alert, locationHistory: Array.isArray(alert.locationHistory) ? alert.locationHistory : []});
     }
   };
 
   const defaultIcon = useMemo(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && isClient) { 
       const L = require('leaflet');
       return new L.Icon({
           iconUrl: '/marker-icon.png',
@@ -162,7 +169,7 @@ export function AlertHistory() {
 
 
   if (!isClient) {
-    return null; // Or a loading spinner
+    return <div className="p-4">Loading alert history...</div>;
   }
 
   return (
@@ -184,7 +191,7 @@ export function AlertHistory() {
       <div className="space-y-2">
         {alerts.map((alert) => (
           <div
-            key={alert.id}
+            key={alert.id} 
             className="alert-history-item border rounded-md p-3 cursor-pointer hover:bg-muted flex justify-between items-center"
             onClick={() => handleAlertClick(alert)}
             tabIndex={0}
@@ -307,7 +314,7 @@ export function AlertHistory() {
                             <Polyline positions={selectedAlert.locationHistory.map(p => [p.lat, p.lng]) as LatLngExpression[]} color="blue" />
                         </MapContainer>
                     ) : (
-                        <p>Location history is available but map cannot be centered.</p>
+                        <p>Location history is available but the map cannot be centered (missing initial point).</p>
                     )}
                 </div>
             </DialogContent>
@@ -316,3 +323,4 @@ export function AlertHistory() {
     </div>
   );
 }
+
