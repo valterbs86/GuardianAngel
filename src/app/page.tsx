@@ -25,6 +25,7 @@ import {getCurrentLocation, Location} from "@/services/location";
 import {Play, PauseSquare, Gear, StopCircle} from "lucide-react";
 import {CheckCircle, XCircle} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
 
 
 // import GuardianAngelLogo from "@/components/GuardianAngelLogo";
@@ -193,15 +194,20 @@ function HomeComponent() {
     let streamToStop: MediaStream | null = null;
     try {
         // Request a new stream specifically for capturing the picture
-        streamToStop = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
-        if (!streamToStop) {
+        const currentStreamForCapture = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
+        if (!currentStreamForCapture) {
             toast({ title: "Camera Error", description: "Failed to get camera stream for picture.", variant: "destructive" });
             return null;
         }
+        streamToStop = currentStreamForCapture;
+
 
         const tempVideoEl = document.createElement('video');
         tempVideoEl.srcObject = streamToStop;
-        await tempVideoEl.play(); // Ensure video is playing
+        
+        // Wait for the video to be ready to play to ensure dimensions are set
+        await new Promise(resolve => tempVideoEl.onloadedmetadata = resolve);
+        await tempVideoEl.play(); 
 
         return new Promise((resolve) => {
             const handleCanPlay = () => {
@@ -216,9 +222,14 @@ function HomeComponent() {
                     resolve(null);
                 }
                 tempVideoEl.removeEventListener('canplay', handleCanPlay);
-                streamToStop?.getTracks().forEach(track => track.stop()); // Stop this specific stream
+                streamToStop?.getTracks().forEach(track => track.stop()); 
             };
-            tempVideoEl.addEventListener('canplay', handleCanPlay, { once: true });
+            
+            if (tempVideoEl.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
+                 handleCanPlay(); // If already ready, call directly
+            } else {
+                tempVideoEl.addEventListener('canplay', handleCanPlay, { once: true });
+            }
         });
     } catch (error) {
         console.error(`Error capturing ${facingMode} picture:`, error);
@@ -230,29 +241,27 @@ function HomeComponent() {
 
 
   const startRecording = async () => {
-    // Ensure we have a fresh stream for recording if none exists or if it's not active
     if (!streamRef.current || !streamRef.current.active) {
-        const stream = await getCameraPermission('user'); // Default to user facing for recording
+        const stream = await getCameraPermission('user'); 
         if (!stream) {
             toast({ title: "Recording Error", description: "Failed to get camera stream for recording.", variant: "destructive" });
-            setHasCameraPermission(false); // Explicitly set permission to false
+            setHasCameraPermission(false); 
             return;
         }
         streamRef.current = stream;
-        if (videoRef.current) { // Make sure video element displays the stream
+        if (videoRef.current) { 
             videoRef.current.srcObject = streamRef.current;
         }
     }
 
 
-    if (streamRef.current && streamRef.current.active) { // Double check stream is active
+    if (streamRef.current && streamRef.current.active) { 
         try {
-            // Check if MediaRecorder is supported with a common codec
             let mimeType = 'video/webm; codecs=vp9';
             if (!MediaRecorder.isTypeSupported(mimeType)) {
                 mimeType = 'video/webm; codecs=vp8';
                 if (!MediaRecorder.isTypeSupported(mimeType)) {
-                    mimeType = 'video/webm'; // Fallback
+                    mimeType = 'video/webm'; 
                      if (!MediaRecorder.isTypeSupported(mimeType)) {
                         toast({ title: "Recording Error", description: "No supported video mimeType found.", variant: "destructive" });
                         return;
@@ -271,17 +280,15 @@ function HomeComponent() {
 
             mediaRecorderRef.current.onstop = async () => {
                 const videoBlob = new Blob(recordedChunksRef.current, { type: mimeType });
-                const videoUrl = URL.createObjectURL(videoBlob);
-
+                
                 if (typeof window !== 'undefined' && panicEventId) {
                     const existingEventData = localStorage.getItem(`panicEvent-${panicEventId}`);
                     if (existingEventData) {
                         const parsedData = JSON.parse(existingEventData);
-                        // Store as base64 to save in localStorage, or handle blob upload elsewhere
                         const reader = new FileReader();
                         reader.readAsDataURL(videoBlob);
                         reader.onloadend = function() {
-                            parsedData.videoDataUrl = reader.result;
+                            parsedData.videoUrl = reader.result; // Changed from videoDataUrl to videoUrl
                             localStorage.setItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData));
                         }
                     }
@@ -304,7 +311,7 @@ function HomeComponent() {
 
   const stopRecordingAndReleaseCamera = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop(); // onstop will handle saving
+      mediaRecorderRef.current.stop(); 
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -315,16 +322,19 @@ function HomeComponent() {
     }
     setHasCameraPermission(false);
     setIsRecording(false);
-    toast({ title: "Recording Stopped", description: "Video and audio recording has ended." });
+    // toast({ title: "Recording Stopped", description: "Video and audio recording has ended." }); // Toast moved to validatePin for better flow
   };
 
   const triggerEmergencySequence = async () => {
-    const stream = await getCameraPermission(); // Request permission first
-    if (!stream) {
-         toast({ title: "Emergency Error", description: "Cannot start emergency sequence without camera permission.", variant: "destructive" });
-         return;
+    // Check and request camera permissions before starting the sequence
+    if (!hasCameraPermission) {
+      const stream = await getCameraPermission();
+      if (!stream) {
+        toast({ title: "Emergency Error", description: "Cannot start emergency sequence without camera permission.", variant: "destructive" });
+        return;
+      }
     }
-    // Stream is now active and in streamRef.current, videoRef.current.srcObject is set
+    // At this point, permissions should be granted and streamRef.current should be set
 
     setEmergency(true);
     if (typeof window !== 'undefined') {
@@ -343,11 +353,10 @@ function HomeComponent() {
     const frontPicture = await capturePicture('user');
     const rearPicture = await capturePicture('environment');
     
-    // Ensure videoRef is displaying the current stream before starting recording
     if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
         videoRef.current.srcObject = streamRef.current;
     }
-    await startRecording(); // This will use streamRef.current
+    await startRecording(); 
 
     const location = await getCurrentLocation();
     const startTime = new Date();
@@ -360,7 +369,7 @@ function HomeComponent() {
       rearCameraPicture: rearPicture,
       gpsCoordinates: `${location.lat}, ${location.lng}`,
       locationHistory: [{ lat: location.lat, lng: location.lng, timestamp: startTime.toISOString() }],
-      videoDataUrl: null, // Initialize videoDataUrl
+      videoUrl: null, 
     };
 
     if (typeof window !== 'undefined') {
@@ -392,8 +401,7 @@ function HomeComponent() {
           title: "PIN Not Set",
           description: "Please set an emergency PIN in settings. Stopping without PIN.",
         });
-        // Proceed to stop panic without PIN if not set
-        setEmergencyPin(null); // Explicitly set to null if no PIN
+        setEmergencyPin(null); 
       } else {
         setEmergencyPin(storedPin);
       }
@@ -414,14 +422,15 @@ function HomeComponent() {
 
       const frontPictureStop = await capturePicture('user');
       const rearPictureStop = await capturePicture('environment');
-      stopRecordingAndReleaseCamera(); // This will also save the video via onstop
+      stopRecordingAndReleaseCamera(); 
+      
       const finalLocation = await getCurrentLocation();
       const endTime = new Date();
 
 
       if (typeof window !== 'undefined' && panicEventId) {
         const existingEventData = localStorage.getItem(`panicEvent-${panicEventId}`);
-        let alertHistory = [];
+        let alertHistory: any[] = [];
         const storedAlerts = localStorage.getItem("alertHistory");
         if (storedAlerts) {
           try {
@@ -438,9 +447,11 @@ function HomeComponent() {
           parsedData.rearCameraPictureStop = rearPictureStop; 
           parsedData.finalGpsCoordinates = `${finalLocation.lat}, ${finalLocation.lng}`;
           parsedData.endTime = endTime.toLocaleTimeString();
-          // videoDataUrl is set in mediaRecorder.onstop
+          // videoUrl is set in mediaRecorder.onstop when it finishes.
+          // To ensure it's there before pushing to history, we might need a small delay or handle it in onstop directly.
+          // For simplicity, assuming onstop has completed.
           localStorage.setItem(`panicEvent-${panicEventId}`, JSON.stringify(parsedData));
-          alertHistory.push(parsedData);
+          alertHistory.push(parsedData); // Add the completed event data
         }
         localStorage.setItem("alertHistory", JSON.stringify(alertHistory));
       }
@@ -498,7 +509,7 @@ function HomeComponent() {
                     </Alert>
                 </div>
             )}
-             { !hasCameraPermission && !isRecording && streamRef.current === null && ( // Placeholder if camera is not yet active
+             { !hasCameraPermission && !isRecording && streamRef.current === null && ( 
                 <div className="absolute inset-0 flex items-center justify-center bg-muted">
                     <p className="text-foreground">Camera preview will appear here</p>
                 </div>
@@ -535,9 +546,9 @@ function HomeComponent() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <label htmlFor="pin" className="text-right font-medium">
+                  <Label htmlFor="pin" className="text-right font-medium">
                     PIN Code
-                  </label>
+                  </Label>
                   <Input
                     type="password"
                     id="pin"
