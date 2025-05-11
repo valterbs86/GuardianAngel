@@ -45,6 +45,7 @@ export function AlertHistory() {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [mapForceRemountKey, setMapForceRemountKey] = useState(0);
 
   useEffect(() => {
     setIsClient(true);
@@ -170,11 +171,16 @@ export function AlertHistory() {
     setSelectedAlert(enrichedAlert);
   };
 
+  const openMapModalForSelectedAlert = () => {
+    setMapForceRemountKey(prev => prev + 1);
+    setIsMapModalOpen(true);
+  };
+
   const defaultIcon = useMemo(() => {
     if (typeof window !== 'undefined' && isClient) { 
       const L = require('leaflet');
       return new L.Icon({
-          iconUrl: '/marker-icon.png', // Make sure these paths are correct in your public folder
+          iconUrl: '/marker-icon.png', 
           iconRetinaUrl: '/marker-icon-2x.png',
           shadowUrl: '/marker-shadow.png',
           iconSize: [25, 41] as [number, number],
@@ -183,7 +189,7 @@ export function AlertHistory() {
           shadowSize: [41, 41] as [number, number]
       });
     }
-    return undefined; // Return undefined if not on client or L is not available
+    return undefined; 
   }, [isClient]);
 
 
@@ -295,7 +301,7 @@ export function AlertHistory() {
               {selectedAlert.locationHistory && selectedAlert.locationHistory.length > 0 && (
                 <div className="mt-4">
                   <h3 className="text-lg font-semibold mb-2">Location History</h3>
-                   <Button onClick={() => setIsMapModalOpen(true)} variant="outline" className="mb-2">View Route on Map</Button>
+                   <Button onClick={openMapModalForSelectedAlert} variant="outline" className="mb-2">View Route on Map</Button>
                 </div>
               )}
             </div>
@@ -312,7 +318,7 @@ export function AlertHistory() {
                 <div className="flex-grow mt-4">
                     { selectedAlert.locationHistory[0] ? (
                         <MapContainer
-                            key={selectedAlert.id + "-map"} // Force re-mount on alert change
+                            key={`map-remount-${mapForceRemountKey}`} 
                             center={[selectedAlert.locationHistory[0].lat, selectedAlert.locationHistory[0].lng] as LatLngExpression}
                             zoom={13}
                             style={{ height: "100%", width: "100%" }}
