@@ -16,7 +16,7 @@ import dynamic from 'next/dynamic';
 import { useToast } from "@/hooks/use-toast";
 
 // Dynamically import react-leaflet components
-const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false, loading: () => <p>Loading map...</p> });
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Polyline = dynamic(() => import('react-leaflet').then(mod => mod.Polyline), { ssr: false });
@@ -49,6 +49,7 @@ export function AlertHistory() {
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined') {
+      // Dynamically import leaflet CSS to prevent server-side rendering issues
       import('leaflet/dist/leaflet.css').catch(err => console.error("Failed to load leaflet CSS", err));
     }
   }, []);
@@ -173,7 +174,7 @@ export function AlertHistory() {
     if (typeof window !== 'undefined' && isClient) { 
       const L = require('leaflet');
       return new L.Icon({
-          iconUrl: '/marker-icon.png',
+          iconUrl: '/marker-icon.png', // Make sure these paths are correct in your public folder
           iconRetinaUrl: '/marker-icon-2x.png',
           shadowUrl: '/marker-shadow.png',
           iconSize: [25, 41] as [number, number],
@@ -182,7 +183,7 @@ export function AlertHistory() {
           shadowSize: [41, 41] as [number, number]
       });
     }
-    return undefined;
+    return undefined; // Return undefined if not on client or L is not available
   }, [isClient]);
 
 
@@ -242,7 +243,7 @@ export function AlertHistory() {
       </div>
 
       {selectedAlert && (
-        <Dialog open={!!selectedAlert} onOpenChange={() => setSelectedAlert(null)}>
+        <Dialog open={!!selectedAlert} onOpenChange={() => {setSelectedAlert(null); setIsMapModalOpen(false);}}>
           <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Alert Details - ID: {selectedAlert.id}</DialogTitle>
@@ -302,7 +303,7 @@ export function AlertHistory() {
         </Dialog>
       )}
 
-      {selectedAlert && selectedAlert.locationHistory && selectedAlert.locationHistory.length > 0 && isMapModalOpen && defaultIcon && (
+      {isMapModalOpen && selectedAlert && selectedAlert.locationHistory && selectedAlert.locationHistory.length > 0 && defaultIcon && (
          <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
             <DialogContent className="sm:max-w-3xl h-[80vh] flex flex-col">
                 <DialogHeader>
@@ -311,6 +312,7 @@ export function AlertHistory() {
                 <div className="flex-grow mt-4">
                     { selectedAlert.locationHistory[0] ? (
                         <MapContainer
+                            key={selectedAlert.id + "-map"} // Force re-mount on alert change
                             center={[selectedAlert.locationHistory[0].lat, selectedAlert.locationHistory[0].lng] as LatLngExpression}
                             zoom={13}
                             style={{ height: "100%", width: "100%" }}
